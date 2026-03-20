@@ -3,6 +3,7 @@
 <head>
   <title>Controle de Frota</title>
   <style>
+    /* Seus estilos mantidos e corrigidos */
     * { margin:0; padding:0; box-sizing:border-box; font-family: Arial, sans-serif;}
     body { background:#f0f2f5; color:#333; text-align:center; padding:20px;}
     h2 { color:#2c3e50; margin-bottom:30px; font-size:2rem; }
@@ -14,7 +15,7 @@
     button:disabled { opacity:.6; cursor:not-allowed; }
     .btn-login { background:#3498db; color:white; }
     .btn-register { background:#2ecc71; color:white; }
-    .btn-logout { background: #e67e22; color: white; padding: 8px 15px; font-size: 0.8rem; border-radius: 8px; cursor: pointer; }
+    .btn-logout { background: #e67e22; color: white; padding: 8px 15px; font-size: 0.8rem; border-radius: 8px; }
     #userDiv { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; }
     #lista { margin-top:20px; }
     .carro-card { border:1px solid #ddd; margin:10px 0; padding:20px; border-radius:15px; box-shadow:0 3px 10px rgba(0,0,0,0.08); text-align:left; transition:transform .2s; position:relative; }
@@ -23,13 +24,11 @@
     .status-disponivel { background: #27ae60; }
     .status-emuso { background: #e74c3c; }
     .carro-card button { margin-top:10px; width:100%; font-weight:bold; border-radius:8px; padding:8px; }
-    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; box-shadow:0 4px 10px rgba(0,0,0,.2); z-index:1000;}
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right: 10px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .btn-loading { opacity: 0.7; cursor: wait; }
+    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; z-index:1000;}
     .password-container { position: relative; width: 100%; }
     .password-container input { padding-right: 45px; }
-    .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d; font-size: 1.1rem; }
+    .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d; }
+    input::-ms-reveal { display: none; }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -81,7 +80,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, addDoc, query, where, getDocs, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyADjANdIwDnh6y4kgWN6oLXeJv4Z00oT-M",
@@ -98,68 +97,83 @@
     const auth = getAuth(app);
 
     let usuarioLogado = null;
-    let ultimoSnapshot = null;
+    let nomeUsuarioLogado = null;
 
-    const mostrarMensagem = (texto, cor="#2ecc71") => {
+    const mostrarMensagem = (texto, cor="#2ecc71", tempo = 2500) => {
       const msg = document.getElementById("mensagem");
       msg.style.background = cor; msg.innerText = texto; msg.style.display = "block";
-      setTimeout(()=> msg.style.display="none", 2500);
+      setTimeout(()=> msg.style.display="none", tempo);
     };
 
     function renderizar(snapshot) {
       const lista = document.getElementById("lista");
       lista.innerHTML = "";
-      snapshot.forEach((docSnap)=>{
+      
+      snapshot.forEach((docSnap) => {
         const carro = docSnap.data();
-        const statusClass = carro.status==="disponivel"?"status-disponivel":"status-emuso";
+        const statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
+        const isAdmin = usuarioLogado && emailsAdmins.includes(usuarioLogado);
         let acaoBotao = "";
         let botaoExcluir = "";
 
-        if(carro.status==="disponivel" && usuarioLogado){
+        if (carro.status === "disponivel" && usuarioLogado) {
           acaoBotao = `<button style="background:#27ae60;color:white;" onclick="pegarCarro('${docSnap.id}')">Pegar</button>`;
-        } else if(carro.status==="em_uso" && carro.usuario===usuarioLogado){
-          acaoBotao = `<button style="background:#e74c3c;color:white;" onclick="devolverCarro('${docSnap.id}')">Devolver</button>`;
-        } else {
-          acaoBotao = `<button disabled style="background:gray;color:white;">Em uso</button>`;
+        } else if (carro.status === "em_uso") {
+          if (carro.usuario === usuarioLogado || isAdmin) {
+            const corBotao = isAdmin && carro.usuario !== usuarioLogado ? "#e67e22" : "#e74c3c";
+            const textoBotao = isAdmin && carro.usuario !== usuarioLogado ? "Devolver (Admin)" : "Devolver";
+            acaoBotao = `<button style="background:${corBotao};color:white;" onclick="devolverCarro('${docSnap.id}')">${textoBotao}</button>`;
+          } else {
+            acaoBotao = `<button disabled style="background:gray;color:white;">Em uso</button>`;
+          }
         }
 
-        if (usuarioLogado && emailsAdmins.includes(usuarioLogado)) {
+        if (isAdmin) {
           botaoExcluir = `<button style="background:#c0392b; color:white; margin-top:5px; font-size:0.8rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir Veículo</button>`;
         }
 
+        const podeLimparAgenda = isAdmin || (carro.agendamento && carro.agendamento.includes(nomeUsuarioLogado));
+        const podeLimparObs = isAdmin;
+
         lista.innerHTML += `
-          <div class="carro-card">
-            <b>${carro.nome}</b>
-            <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
-    
-            <div style="margin-top: 15px; margin-bottom: 15px; font-size: 0.9rem; color: #444; text-align: left; display: flex; flex-direction: column; gap: 5px;">
-            <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span>
-            <span>🏢 Local: <strong style="color: #2c3e50;">${carro.localDevolucao || "Não informado"}</strong></span>
-            </div>
+      <div class="carro-card">
+        <b>${carro.nome}</b>
+        <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
+        
+        <div style="margin-top: 10px; font-size: 0.85rem; color: #444; text-align: left;">
+          <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span><br>
+          <span>🏢 Local: <strong>${carro.localDevolucao || "---"}</strong></span><br>
+          
+          <span style="display:block; margin-top:5px;">
+            📝 <b>Obs:</b> ${carro.observacao || "Nenhuma"} 
+            ${podeLimparObs ? `<i class="fas fa-times-circle" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparObs('${docSnap.id}')" title="Limpar Obs"></i>` : ""}
+          </span>
 
-            ${acaoBotao}
-            ${carro.usuario ? `<br><small style="color: #777;">👤 Com: ${carro.usuario}</small>` : ""}
-            ${botaoExcluir}
-          </div>`;
-        });
-      }
+          <span style="display:block; color:#2980b9; margin-top:5px;">
+            📅 <b>Agenda:</b> ${carro.agendamento || "Sem reservas"}
+            ${podeLimparAgenda && carro.agendamento ? `<i class="fas fa-calendar-times" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparAgenda('${docSnap.id}')" title="Cancelar Agenda"></i>` : ""}
+          </span>
+        </div>
+        
+        `;
+      });
+    }
 
-    // Escuta Histórico
-    const qHistorico = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
-    onSnapshot(qHistorico, (snapshot) => {
+    // Histórico em tempo real
+    onSnapshot(query(collection(db, "historico"), orderBy("data", "desc"), limit(20)), (snap) => {
       const tabela = document.getElementById("tabelaHistorico");
       tabela.innerHTML = "";
-      snapshot.forEach((docSnap) => {
-        const log = docSnap.data();
-        const dataFormatada = log.data?.toDate().toLocaleString('pt-BR') || "---";
-        const corAcao = log.acao === "pegou" ? "#27ae60" : "#e67e22";
-        // Procure esta linha e adicione o local:
-        const infoKM = log.km ? ` (KM: ${log.km}${log.local ? ` - Local: ${log.local}` : ""})` : "";
-        tabela.innerHTML += `<div style="background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 8px; text-align: left; font-size: 0.9rem;"><span style="color: ${corAcao}; font-weight: bold;">[${log.acao.toUpperCase()}]</span> <b>${log.carroNome}</b> por <i>${log.usuario}</i>${infoKM} <small style="float: right; color: #888;">${dataFormatada}</small></div>`;
+      snap.forEach((d) => {
+        const log = d.data();
+        const cor = log.acao === "pegou" ? "#27ae60" : "#e67e22";
+        tabela.innerHTML += `<div style="background:#fff; border:1px solid #eee; padding:10px; margin-bottom:5px; border-radius:8px; font-size:0.8rem;">
+          <b style="color:${cor}">[${log.acao.toUpperCase()}]</b> ${log.carroNome} por ${log.usuarioNome || log.usuario} 
+          ${log.km ? `(KM: ${log.km})` : ""} <small style="float:right">${log.data?.toDate().toLocaleString('pt-BR')}</small>
+        </div>`;
       });
     });
 
-    // Funções Globais para o Celular
+    // Funções Globais
     window.pegarCarro = async (id) => {
       try {
         const q = query(collection(db, "carros"), where("usuario", "==", usuarioLogado));
@@ -168,9 +182,17 @@
 
         const ref = doc(db, "carros", id);
         const snap = await getDoc(ref);
-        const carro = snap.data();
-        await updateDoc(ref, { status: "em_uso", usuario: usuarioLogado, updatedAt: new Date() });
-        await addDoc(collection(db, "historico"), { carroId: id, carroNome: carro.nome, usuario: usuarioLogado, acao: "pegou", data: new Date() });
+        await updateDoc(ref, { 
+          status: "em_uso", 
+          usuario: usuarioLogado, 
+          usuarioNome: nomeUsuarioLogado || usuarioLogado,
+          updatedAt: new Date() 
+        });
+        await addDoc(collection(db, "historico"), { 
+          carroId: id, carroNome: snap.data().nome, 
+          usuario: usuarioLogado, usuarioNome: nomeUsuarioLogado || usuarioLogado,
+          acao: "pegou", data: new Date() 
+        });
         mostrarMensagem("Carro liberado!");
       } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
     };
@@ -181,117 +203,82 @@
       const carro = snap.data();
       const kmAnterior = parseFloat(carro.ultimoKM) || 0;
 
-      // 1. Pergunta o KM e valida se é maior que o anterior
-      const novoKM = prompt(`KM anterior era ${kmAnterior}. Digite o KM atual:`);
-  
-      if (!novoKM || isNaN(novoKM)) {
-        return mostrarMensagem("KM obrigatório e deve ser um número!", "#e74c3c");
-      }
-  
-      if (parseFloat(novoKM) <= kmAnterior) {
-       return mostrarMensagem(`Erro: O KM atual (${novoKM}) não pode ser menor ou igual ao anterior (${kmAnterior})!`, "#e74c3c");
+      const novoKM = prompt(`KM anterior: ${kmAnterior}. Digite o KM atual:`);
+      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
+        return mostrarMensagem("KM inválido ou menor que o anterior!", "#e74c3c", 4000);
       }
 
-      // 2. Pergunta o local de devolução
-      const local = prompt("Onde o veículo foi devolvido? (Digite: GHPC, G-Motion ou KPT)").toUpperCase();
-      const locaisValidos = ["GHPC", "G-MOTION", "KPT"];
-
-      if (!locaisValidos.includes(local)) {
-        return mostrarMensagem("Local inválido! Use apenas: GHPC, G-Motion ou KPT", "#e74c3c");
-      }
+      const local = prompt("Local (GHPC, G-MOTION ou KPT):").toUpperCase();
+      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) return mostrarMensagem("Local inválido!", "#e74c3c");
 
       try {
-        // Atualiza o carro
-        await updateDoc(ref, { 
-          status: "disponivel", 
-          usuario: "", 
-          ultimoKM: novoKM,
-          localDevolucao: local,
-          updatedAt: new Date() 
-        });
-
-        // Registra no histórico detalhado
+        await updateDoc(ref, { status: "disponivel", usuario: "", usuarioNome: "", ultimoKM: novoKM, localDevolucao: local, updatedAt: new Date() });
         await addDoc(collection(db, "historico"), { 
-          carroId: id, 
-          carroNome: carro.nome, 
-          usuario: usuarioLogado, 
-          acao: "devolveu", 
-          km: novoKM,
-          local: local,
-          data: new Date() 
+          carroId: id, carroNome: carro.nome, usuario: usuarioLogado, 
+          usuarioNome: nomeUsuarioLogado || usuarioLogado, acao: "devolveu", km: novoKM, local: local, data: new Date() 
         });
-
-      mostrarMensagem(`Sucesso! Carro em ${local} com ${novoKM} KM.`);
-    } catch (err) {
-      mostrarMensagem("Erro ao devolver: " + err.message, "#e74c3c");
-    }
-  };
-    window.login = async () => {
-      const e = document.getElementById("email").value;
-      const s = document.getElementById("senha").value;
-      try { await signInWithEmailAndPassword(auth, e, s); mostrarMensagem("Bem-vindo!"); } 
-      catch (err) { mostrarMensagem("E-mail ou senha incorretos", "#e74c3c"); }
-    };
-
-    window.registrar = async () => {
-      const e = document.getElementById("email").value;
-      const s = document.getElementById("senha").value;
-      try { await createUserWithEmailAndPassword(auth, e, s); mostrarMensagem("Conta criada!"); } 
-      catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
-    };
-
-    window.logout = () => signOut(auth);
-
-    window.toggleSenha = () => {
-      const s = document.getElementById("senha");
-      const i = document.getElementById("olhoIcone");
-      s.type = s.type === "password" ? "text" : "password";
-      i.classList.toggle("fa-eye"); i.classList.toggle("fa-eye-slash");
-    };
-
-    window.toggleHistorico = () => {
-      const c = document.getElementById("conteudoHistorico");
-      const s = document.getElementById("setaHistorico");
-      const aberto = c.style.display === "block";
-      c.style.display = aberto ? "none" : "block";
-      s.innerText = aberto ? "▼" : "▲";
-    };
-
-    window.cadastrarCarro = async () => {
-      const n = document.getElementById("novoCarroNome").value;
-      if (!n) return mostrarMensagem("Digite o nome!", "#e74c3c");
-      try {
-        await addDoc(collection(db, "carros"), { nome: n, status: "disponivel", usuario: "", updatedAt: new Date() });
-        document.getElementById("novoCarroNome").value = "";
-        mostrarMensagem("Cadastrado!");
+        mostrarMensagem("Devolvido com sucesso!");
       } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
     };
 
-    window.excluirCarro = async (id, nome) => {
-      if (confirm(`Remover ${nome}?`)) {
-        try { await deleteDoc(doc(db, "carros", id)); mostrarMensagem("Removido!"); } 
-        catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+    window.login = async () => {
+      const e = document.getElementById("email").value;
+      const s = document.getElementById("senha").value;
+      try { await signInWithEmailAndPassword(auth, e, s); } catch (err) { mostrarMensagem("Erro no login", "#e74c3c"); }
+    };
+
+    window.registrar = async () => {
+      const nome = prompt("Qual seu nome?");
+      const e = document.getElementById("email").value;
+      const s = document.getElementById("senha").value;
+      if (!nome) return;
+      try {
+        const res = await createUserWithEmailAndPassword(auth, e, s);
+        await updateProfile(res.user, { displayName: nome });
+        mostrarMensagem("Conta criada!");
+      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+    };
+
+    window.logout = () => signOut(auth);
+    window.toggleSenha = () => {
+      const s = document.getElementById("senha");
+      s.type = s.type === "password" ? "text" : "password";
+    };
+    window.toggleHistorico = () => {
+      const c = document.getElementById("conteudoHistorico");
+      c.style.display = c.style.display === "block" ? "none" : "block";
+    };
+    window.editarObs = async (id) => {
+      const obs = prompt("Observação:");
+      if (obs !== null) await updateDoc(doc(db, "carros", id), { observacao: obs });
+    };
+    window.agendarCarro = async (id) => {
+      const ag = prompt("Agendamento (Ex: Ivan 21/03 13h):");
+      if (ag !== null) await updateDoc(doc(db, "carros", id), { agendamento: ag });
+    };
+    window.cadastrarCarro = async () => {
+      const n = document.getElementById("novoCarroNome").value;
+      if (n) {
+        await addDoc(collection(db, "carros"), { nome: n, status: "disponivel", usuario: "", updatedAt: new Date() });
+        document.getElementById("novoCarroNome").value = "";
       }
+    };
+    window.excluirCarro = async (id, nome) => {
+      if (confirm(`Excluir ${nome}?`)) await deleteDoc(doc(db, "carros", id));
     };
 
     onAuthStateChanged(auth, (user) => {
-      const authDiv = document.getElementById("authDiv");
-      const privDiv = document.getElementById("conteudoPrivado");
-      const adminDiv = document.getElementById("adminDiv");
-      const info = document.getElementById("userInfo");
-
       if (user) {
         usuarioLogado = user.email;
-        authDiv.style.display = "none";
-        privDiv.style.display = "block";
-        info.innerText = "👤 " + user.email;
-        adminDiv.style.display = emailsAdmins.includes(user.email) ? "block" : "none";
-        
-        onSnapshot(collection(db, "carros"), (snap) => { ultimoSnapshot = snap; renderizar(snap); });
+        nomeUsuarioLogado = user.displayName;
+        document.getElementById("authDiv").style.display = "none";
+        document.getElementById("conteudoPrivado").style.display = "block";
+        document.getElementById("userInfo").innerText = "👤 " + (user.displayName || user.email);
+        document.getElementById("adminDiv").style.display = emailsAdmins.includes(user.email) ? "block" : "none";
+        onSnapshot(collection(db, "carros"), (snap) => renderizar(snap));
       } else {
-        usuarioLogado = null;
-        authDiv.style.display = "block";
-        privDiv.style.display = "none";
+        document.getElementById("authDiv").style.display = "block";
+        document.getElementById("conteudoPrivado").style.display = "none";
       }
     });
   </script>
