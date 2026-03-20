@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Controle de Frota</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family: Arial, sans-serif;}
+    body { background:#f0f2f5; color:#333; text-align:center; padding:20px;}
+    h2 { color:#2c3e50; margin-bottom:30px; font-size:2rem; }
+    #container { max-width:500px; margin:auto; background:white; padding:25px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+    input { width:100%; padding:12px 15px; margin:10px 0; border:1px solid #ccc; border-radius:10px; font-size:1rem; transition:.3s; }
+    input:focus { border-color:#3498db; outline:none; box-shadow:0 0 5px rgba(52,152,219,.5); }
+    button { padding:10px 20px; margin:5px; font-size:1rem; border:none; border-radius:10px; cursor:pointer; transition:.3s; }
+    button:hover { opacity:.9; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-login { background:#3498db; color:white; }
+    .btn-register { background:#2ecc71; color:white; }
+    .btn-logout { 
+      background: #e67e22; 
+      color: white; 
+      padding: 8px 15px;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      /* Removemos o float e o margin negativo que estavam quebrando o layout */
+    }
+
+    #userDiv {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+    #userInfo { margin:15px 0; font-weight:bold; color:#555; }
+    #lista { margin-top:20px; }
+    .carro-card { border:1px solid #ddd; margin:10px 0; padding:20px; border-radius:15px; box-shadow:0 3px 10px rgba(0,0,0,0.08); text-align:left; transition:transform .2s; position:relative; }
+    .carro-card:hover { transform:translateY(-2px); box-shadow:0 6px 15px rgba(0,0,0,0.12); }
+    .carro-card b { font-size: 1.2rem; color: #2c3e50; display: block; margin-bottom: 10px; }
+    .carro-status { font-weight:bold; padding:5px 10px; border-radius:5px; color:white; }
+    .status-disponivel { background: #27ae60; }
+    .status-emuso { background: #e74c3c; }
+    .carro-card button { margin-top:10px; width:100%; font-weight:bold; border-radius:8px; padding:8px; }
+    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; box-shadow:0 4px 10px rgba(0,0,0,.2); z-index:1000;}
+    /* Estilo do Spinner (Animação de Carregamento) */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .password-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .password-container input {
+      padding-right: 45px; /* Abre espaço para o ícone */
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #7f8c8d;
+      font-size: 1.1rem;
+      transition: 0.2s;
+    }
+
+    .toggle-password:hover {
+      color: #3498db;
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="https://via.placeholder.com/192">
+</head>
+<body>
+
+  <h2>Controle de Frota</h2>
+  <div id="mensagem"></div>
+
+  <div id="container">
+    <div id="authDiv">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="senha" placeholder="Senha">
+      <button class="btn-login" onclick="login()">Login</button>
+      <button class="btn-register" onclick="registrar()">Registrar</button>
+    </div>
+
+    <div id="conteudoPrivado" style="display: none;">
+
+      <div id="userDiv">
+        <div id="userInfo" style="margin:0; font-size: 0.9rem;"></div>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
+
+      <div id="adminDiv" style="background: #ecf0f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left;">
+        <h4 style="margin-bottom: 10px; color: #2c3e50;">➕ Cadastrar Novo Veículo</h4>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="novoCarroNome" placeholder="Ex: Golf - ABC1234" style="margin:0;">
+          <button class="btn-register" onclick="cadastrarCarro()" style="margin:0; white-space: nowrap;">Adicionar</button>
+        </div>
+      </div>
+
+      <div id="lista"></div>
+
+      <div id="historicoSecao" style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 10px;">
+        <button onclick="toggleHistorico()" style="background: #95a5a6; color: white; width: 100%; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+          📜 Ver Histórico de Movimentações
+          <span id="setaHistorico">▼</span>
+        </button>
+    
+        <div id="conteudoHistorico" style="display: none;">
+          <div id="tabelaHistorico" style="max-height: 250px; overflow-y: auto; padding: 5px;">
+          </div>
+        </div>
+      </div>
+
+      <input type="number" id="kmInput" placeholder="KM Atual" style="display:none; margin-bottom: 10px;">
+
+    </div>
+
+  </div>
+
+ <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, addDoc, query, where, getDocs, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyADjANdIwDnh6y4kgWN6oLXeJv4Z00oT-M",
+      authDomain: "frota-empresa.firebaseapp.com",
+      projectId: "frota-empresa",
+      storageBucket: "frota-empresa.firebasestorage.app",
+      messagingSenderId: "241729095537",
+      appId: "1:241729095537:web:fcfb1e2a5fe7c3fca098d0"
+    };
+
+    // Adicione seu e-mail aqui para ter acesso total
+    const emailsAdmins = ["yuri@teste.com"];
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let usuarioLogado = null;
+    let ultimoSnapshot = null;
+
+    const mostrarMensagem = (texto, cor="#2ecc71") => {
+      const msg = document.getElementById("mensagem");
+      msg.style.background = cor;
+      msg.innerText = texto;
+      msg.style.display = "block";
+      setTimeout(()=> msg.style.display="none", 2500);
+    };
+
+    function renderizar(snapshot) {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "";
+      snapshot.forEach((docSnap)=>{
+        const carro = docSnap.data();
+        const statusClass = carro.status==="disponivel"?"status-disponivel":"status-emuso";
+        let acaoBotao = "";
+        let botaoExcluir = "";
+
+        if(carro.status==="disponivel" && usuarioLogado){
+          acaoBotao = `<button style="background:#27ae60;color:white;" onclick="pegarCarro('${docSnap.id}')">Pegar</button>`;
+        } else if(carro.status==="em_uso" && carro.usuario===usuarioLogado){
+          acaoBotao = `<button style="background:#e74c3c;color:white;" onclick="devolverCarro('${docSnap.id}')">Devolver</button>`;
+        } else {
+          acaoBotao = `<button disabled style="background:gray;color:white;">Em uso</button>`;
+        }
+
+        // Verifica se é admin para mostrar o botão de excluir
+        if (usuarioLogado && emailsAdmins.includes(usuarioLogado)) {
+          botaoExcluir = `<button style="background:#c0392b; color:white; margin-top:5px; font-size:0.8rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir Veículo</button>`;
+        }
+
+        lista.innerHTML += `
+          <div class="carro-card">
+            <b>${carro.nome}</b>
+            <span class="carro-status ${statusClass}">${carro.status==="disponivel"?"Disponível":"Em uso"}</span>
+            <br><br>
+            ${acaoBotao}
+            ${carro.usuario?`<br><small>👤 Com: ${carro.usuario}</small>`:""}
+            ${botaoExcluir}
+          </div>`;
+      });
+    }
+
+    const qHistorico = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
+    onSnapshot(qHistorico, (snapshot) => {
+      const tabela = document.getElementById("tabelaHistorico");
+      tabela.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const log = docSnap.data();
+        const dataFormatada = log.data?.toDate().toLocaleString('pt-BR') || "---";
+        const corAcao = log.acao === "pegou" ? "#27ae60" : "#e67e22";
+        tabela.innerHTML += `<div style="background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 8px; text-align: left; font-size: 0.9rem;"><span style="color: ${corAcao}; font-weight: bold;">[${log.acao.toUpperCase()}]</span> <b>${log.carroNome}</b> por <i>${log.usuario}</i> <small style="float: right; color: #888;">${dataFormatada}</small></div>`;
+      });
+    });
+
+    // Funções Globais
+    const setBotaoCarregando = (classeBotao, estaCarregando, textoOriginal) => {
+      const btn = document.querySelector(`.${classeBotao}`);
+      if (btn) {
+        btn.disabled = estaCarregando;
+        btn.innerHTML = estaCarregando ? `<div class="spinner"></div>` : textoOriginal;
+      }
+    };
+
+    window.pegarCarro = async (id) => {
+      if (!usuarioLogado) return mostrarMensagem("Faça login!", "#e74c3c");
+      try {
+        const q = query(collection(db, "carros"), where("usuario", "==", usuarioLogado));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) return mostrarMensagem("Você já tem um carro!", "#e74c3c");
+
+        const ref = doc(db, "carros", id);
+        const snap = await getDoc(ref);
+        const carro = snap.data();
+        await updateDoc(ref, { status: "em_uso", usuario: usuarioLogado, updatedAt: new Date() });
+        await addDoc(collection(db, "historico"), { carroId: id, carroNome: carro.nome, usuario: usuarioLogado, acao: "pegou", data: new Date() });
+        mostrarMensagem("Carro liberado!");
+      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+    };
+
+    window.devolverCarro = async (id) => {
+      const km = prompt("Qual a quilometragem atual do veículo?");
+      if (!km || isNaN(km)) return mostrarMensagem("KM obrigatório para devolver!", "#e74c3c");
+
+      const ref = doc(db, "carros", id);
+      const snap = await getDoc(ref);
+      const carro = snap.data();
+
+      try {
+        // Atualiza o carro com o novo KM
+        await updateDoc(ref, { 
+        status: "disponivel", 
+        usuario: "", 
+        ultimoKM: km,
+        updatedAt: new Date() 
+      });
+
+      // Registra no histórico com o KM
+      await addDoc(collection(db, "historico"), { 
+        carroId: id, 
+        carroNome: carro.nome, 
+        usuario: usuarioLogado, 
+        acao: "devolveu", 
+        km: km,
+        data: new Date() 
+      });
+
+      mostrarMensagem("Carro devolvido com sucesso!");
+    } catch (err) {
+      mostrarMensagem("Erro: " + err.message, "#e74c3c");
+    }
+  };
+
+    window.login = async () => {
+      const e = document.getElementById("email").value;
+      const s = document.getElementById("senha").value;
+      if(!e || !s) return mostrarMensagem("Preencha os campos", "#e74c3c");
+      setBotaoCarregando("btn-login", true, "Login");
+      try { await signInWithEmailAndPassword(auth, e, s); mostrarMensagem("Bem-vindo!"); } 
+      catch (err) { mostrarMensagem("E-mail ou senha incorretos", "#e74c3c"); } 
+      finally { setBotaoCarregando("btn-login", false, "Login"); }
+    };
+
+    window.registrar = async () => {
+      const e = document.getElementById("email").value;
+      const s = document.getElementById("senha").value;
+      if(!e || !s) return mostrarMensagem("Preencha os campos", "#e74c3c");
+      setBotaoCarregando("btn-register", true, "Registrar");
+      try { await createUserWithEmailAndPassword(auth, e, s); mostrarMensagem("Conta criada!"); } 
+      catch (err) { mostrarMensagem(err.message, "#e74c3c"); } 
+      finally { setBotaoCarregando("btn-register", false, "Registrar"); }
+    };
+
+    window.logout = () => signOut(auth);
+
+    window.toggleHistorico = () => {
+      const conteudo = document.getElementById("conteudoHistorico");
+      const seta = document.getElementById("setaHistorico");
+      const aberto = conteudo.style.display === "block";
+      conteudo.style.display = aberto ? "none" : "block";
+      seta.innerText = aberto ? "▼" : "▲";
+    };
+
+    window.cadastrarCarro = async () => {
+      const nome = document.getElementById("novoCarroNome").value;
+      if (!nome) return mostrarMensagem("Digite o nome e a placa!", "#e74c3c");
+      try {
+        await addDoc(collection(db, "carros"), { nome: nome, status: "disponivel", usuario: "", updatedAt: new Date() });
+        document.getElementById("novoCarroNome").value = "";
+        mostrarMensagem("Carro cadastrado!");
+      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+    };
+
+    window.excluirCarro = async (id, nome) => {
+      if (!confirm(`Remover ${nome} da frota?`)) return;
+      try {
+        await deleteDoc(doc(db, "carros", id));
+        mostrarMensagem("Veículo removido!");
+      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+    };
+
+    onSnapshot(collection(db, "carros"), (snap) => { ultimoSnapshot = snap; renderizar(snap); });
+
+    onAuthStateChanged(auth, (user) => {
+      const adminDiv = document.getElementById("adminDiv");
+      const authDiv = document.getElementById("authDiv");
+      const conteudoPrivado = document.getElementById("conteudoPrivado");
+      const userInfo = document.getElementById("userInfo");
+
+      if (user) {
+        usuarioLogado = user.email;
+        authDiv.style.display = "none";
+        conteudoPrivado.style.display = "block";
+        userInfo.innerText = "Logado como: " + user.email;
+        adminDiv.style.display = emailsAdmins.includes(user.email) ? "block" : "none";
+      } else {
+        usuarioLogado = null;
+        authDiv.style.display = "block";
+        conteudoPrivado.style.display = "none";
+      }
+      if (ultimoSnapshot) renderizar(ultimoSnapshot);
+    });
+
+    window.toggleSenha = () => {
+      const senhaInput = document.getElementById("senha");
+      const icone = document.getElementById("olhoIcone");
+      
+      if (senhaInput.type === "password") {
+        senhaInput.type = "text";
+        icone.classList.remove("fa-eye");
+        icone.classList.add("fa-eye-slash");
+      } else {
+        senhaInput.type = "password";
+        icone.classList.remove("fa-eye-slash");
+        icone.classList.add("fa-eye");
+      }
+    };
+  </script>
+</body>
+</html>
