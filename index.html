@@ -3,35 +3,44 @@
 <head>
   <title>Controle de Frota</title>
   <style>
-    /* Seus estilos mantidos e corrigidos */
+    /* Estilos base mantidos */
     * { margin:0; padding:0; box-sizing:border-box; font-family: Arial, sans-serif;}
     body { background:#f0f2f5; color:#333; text-align:center; padding:20px;}
     h2 { color:#2c3e50; margin-bottom:30px; font-size:2rem; }
     #container { max-width:500px; margin:auto; background:white; padding:25px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
     input { width:100%; padding:12px 15px; margin:10px 0; border:1px solid #ccc; border-radius:10px; font-size:1rem; transition:.3s; }
-    input:focus { border-color:#3498db; outline:none; box-shadow:0 0 5px rgba(52,152,219,.5); }
     button { padding:10px 20px; margin:5px; font-size:1rem; border:none; border-radius:10px; cursor:pointer; transition:.3s; }
-    button:hover { opacity:.9; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
     .btn-login { background:#3498db; color:white; }
     .btn-register { background:#2ecc71; color:white; }
     .btn-logout { background: #e67e22; color: white; padding: 8px 15px; font-size: 0.8rem; border-radius: 8px; }
     #userDiv { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; }
-    #lista { margin-top:20px; }
-    .carro-card { border:1px solid #ddd; margin:10px 0; padding:20px; border-radius:15px; box-shadow:0 3px 10px rgba(0,0,0,0.08); text-align:left; transition:transform .2s; position:relative; }
+    .carro-card { border:1px solid #ddd; margin:10px 0; padding:20px; border-radius:15px; box-shadow:0 3px 10px rgba(0,0,0,0.08); text-align:left; position:relative; }
     .carro-card b { font-size: 1.2rem; color: #2c3e50; display: block; margin-bottom: 10px; }
     .carro-status { font-weight:bold; padding:5px 10px; border-radius:5px; color:white; }
     .status-disponivel { background: #27ae60; }
     .status-emuso { background: #e74c3c; }
     .carro-card button { margin-top:10px; width:100%; font-weight:bold; border-radius:8px; padding:8px; }
-    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; z-index:1000;}
+    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; z-index:3000;}
     .password-container { position: relative; width: 100%; }
-    .password-container input { padding-right: 45px; }
     .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d; }
-    input::-ms-reveal { display: none; }
+
+    /* --- CSS DA AGENDA ESTILO TEAMS --- */
+    #modalAgenda { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto; }
+    .modal-content { background: white; margin: 5% auto; padding: 20px; border-radius: 15px; width: 95%; max-width: 600px; position: relative; }
+    .close-modal { position: absolute; right: 20px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; }
+    
+    .grade-semanal { display: grid; grid-template-columns: 50px repeat(5, 1fr); gap: 5px; margin-top: 20px; font-size: 0.7rem; overflow-x: auto; }
+    .col-hora { background: #f8f9fa; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 5px; border: 1px solid #eee;}
+    .dia-cabecalho { font-weight: bold; text-align: center; padding: 10px 0; background: #34495e; color: white; border-radius: 5px; }
+    
+    .slot-agenda { height: 50px; border: 1px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; text-align: center;}
+    .slot-disponivel:hover { background: #e1f5fe; border-color: #3498db; }
+    .slot-ocupado { background: #ffebee; border-color: #ffcdd2; color: #c62828; cursor: not-allowed; }
+    .slot-meu { background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32; }
+    .slot-ocupado small { font-size: 0.55rem; font-weight: bold; }
+    .btn-cancela-slot { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; border: none; font-size: 0.6rem; padding: 2px 5px; border-radius: 0 0 0 5px; cursor: pointer; }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 <body>
 
@@ -44,7 +53,6 @@
         <button onclick="alternarAuth('login')" id="tabLogin" style="flex:1; background:#3498db; color:white;">Login</button>
         <button onclick="alternarAuth('registro')" id="tabRegistro" style="flex:1; background:#ecf0f1; color:#333;">Novo Cadastro</button>
       </div>
-
       <div id="formLogin">
         <input type="email" id="emailLogin" placeholder="E-mail">
         <div class="password-container">
@@ -53,12 +61,11 @@
         </div>
         <button class="btn-login" onclick="login()" style="width:100%">Entrar no Sistema</button>
       </div>
-
       <div id="formRegistro" style="display: none;">
         <input type="text" id="nomeRegistro" placeholder="Seu Nome Completo">
         <input type="email" id="emailRegistro" placeholder="E-mail Corporativo">
         <div class="password-container">
-          <input type="password" id="senhaRegistro" placeholder="Criar Senha (mín. 6 dígitos)">
+          <input type="password" id="senhaRegistro" placeholder="Senha">
           <i class="fas fa-eye toggle-password" onclick="toggleSenha('senhaRegistro')"></i>
         </div>
         <button class="btn-register" onclick="registrar()" style="width:100%">Criar Minha Conta</button>
@@ -67,29 +74,35 @@
 
     <div id="conteudoPrivado" style="display: none;">
       <div id="userDiv">
-        <div id="userInfo" style="margin:0; font-size: 0.8rem; font-weight: bold;"></div>
+        <div id="userInfo" style="font-size: 0.8rem; font-weight: bold;"></div>
         <button class="btn-logout" onclick="logout()">Sair</button>
       </div>
-
       <div id="adminDiv" style="background: #ecf0f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left; display: none;">
-        <h4 style="margin-bottom: 10px; color: #2c3e50;">➕ Cadastrar Novo Veículo</h4>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="novoCarroNome" placeholder="Ex: Golf - ABC1234" style="margin:0;">
-          <button class="btn-register" onclick="cadastrarCarro()" style="margin:0; white-space: nowrap;">Adicionar</button>
+        <h4 style="margin-bottom: 5px;">➕ Cadastrar Veículo</h4>
+        <div style="display: flex; gap: 5px;">
+          <input type="text" id="novoCarroNome" placeholder="Ex: Strada - ABC1234" style="margin:0;">
+          <button class="btn-register" onclick="cadastrarCarro()" style="margin:0;">Adicionar</button>
         </div>
       </div>
-
       <div id="lista"></div>
-
-      <div id="historicoSecao" style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 10px;">
-        <button onclick="toggleHistorico()" style="background: #95a5a6; color: white; width: 100%; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-          📜 Ver Histórico de Movimentações
-          <span id="setaHistorico">▼</span>
+      
+      <div id="historicoSecao" style="margin-top: 20px;">
+        <button onclick="toggleHistorico()" style="background: #95a5a6; color: white; width: 100%; display: flex; justify-content: space-between;">
+          📜 Histórico <span id="setaHistorico">▼</span>
         </button>
-        <div id="conteudoHistorico" style="display: none;">
-          <div id="tabelaHistorico" style="max-height: 250px; overflow-y: auto; padding: 5px;"></div>
+        <div id="conteudoHistorico" style="display: none; padding-top:10px;">
+          <div id="tabelaHistorico"></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="modalAgenda">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal()">&times;</span>
+      <h3 id="tituloModal">Agenda</h3>
+      <p style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Clique nos slots para reservar ou cancelar seus horários.</p>
+      <div class="grade-semanal" id="gradeHorarios"></div>
     </div>
   </div>
 
@@ -114,6 +127,9 @@
 
     let usuarioLogado = null;
     let nomeUsuarioLogado = null;
+    let carroIdAtual = null;
+    const DIAS = ["SEG", "TER", "QUA", "QUI", "SEX"];
+    const HORAS = ["08:00", "09:00", "10:00", "11:00", "12:00","13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
     const mostrarMensagem = (texto, cor="#2ecc71", tempo = 2500) => {
       const msg = document.getElementById("mensagem");
@@ -121,123 +137,119 @@
       setTimeout(()=> msg.style.display="none", tempo);
     };
 
+    // --- FUNÇÃO RENDERIZAR CARROS ---
     function renderizar(snapshot) {
       const lista = document.getElementById("lista");
       lista.innerHTML = "";
-      
       snapshot.forEach((docSnap) => {
         const carro = docSnap.data();
-        const statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
         const isAdmin = usuarioLogado && emailsAdmins.includes(usuarioLogado);
+        const statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
+        
         let acaoBotao = "";
-        let botaoExcluir = "";
-
         if (carro.status === "disponivel" && usuarioLogado) {
           acaoBotao = `<button style="background:#27ae60;color:white;" onclick="pegarCarro('${docSnap.id}')">Pegar</button>`;
         } else if (carro.status === "em_uso") {
           if (carro.usuario === usuarioLogado || isAdmin) {
-            const corBotao = isAdmin && carro.usuario !== usuarioLogado ? "#e67e22" : "#e74c3c";
-            const textoBotao = isAdmin && carro.usuario !== usuarioLogado ? "Devolver (Admin)" : "Devolver";
-            acaoBotao = `<button style="background:${corBotao};color:white;" onclick="devolverCarro('${docSnap.id}')">${textoBotao}</button>`;
+            const corB = isAdmin && carro.usuario !== usuarioLogado ? "#e67e22" : "#e74c3c";
+            acaoBotao = `<button style="background:${corB};color:white;" onclick="devolverCarro('${docSnap.id}')">Devolver ${isAdmin && carro.usuario !== usuarioLogado ? '(Admin)' : ''}</button>`;
           } else {
             acaoBotao = `<button disabled style="background:gray;color:white;">Em uso</button>`;
           }
         }
 
-        if (isAdmin) {
-          botaoExcluir = `<button style="background:#c0392b; color:white; margin-top:5px; font-size:0.8rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir Veículo</button>`;
-        }
-
-        const podeLimparAgenda = isAdmin || (carro.agendamento && carro.agendamento.includes(nomeUsuarioLogado));
-        const podeLimparObs = isAdmin;
-
         lista.innerHTML += `
           <div class="carro-card">
             <b>${carro.nome}</b>
             <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
-            
-            <div style="margin-top: 10px; font-size: 0.85rem; color: #444; text-align: left;">
-              <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span><br>
-              <span>🏢 Local: <strong>${carro.localDevolucao || "---"}</strong></span><br>
-              
-              <span style="display:block; margin-top:5px;">
-                📝 <b>Obs:</b> ${carro.observacao || "Nenhuma"} 
-                ${podeLimparObs && carro.observacao ? `<i class="fas fa-times-circle" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparObs('${docSnap.id}')" title="Limpar Obs"></i>` : ""}
-              </span>
-
-              <span style="display:block; color:#2980b9; margin-top:5px;">
-                📅 <b>Agenda:</b> ${carro.agendamento || "Sem reservas"}
-                ${podeLimparAgenda && carro.agendamento ? `<i class="fas fa-calendar-times" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparAgenda('${docSnap.id}')" title="Cancelar Agenda"></i>` : ""}
-              </span>
+            <div style="font-size: 0.8rem; margin: 10px 0; color: #555;">
+              📍 KM: ${carro.ultimoKM || "---"} | 🏢 Local: ${carro.localDevolucao || "---"}<br>
+              📝 Obs: ${carro.observacao || "Nenhuma"}
             </div>
-
-            <div style="display: flex; gap: 5px; margin-top: 10px;">
-              <button style="font-size: 0.7rem; padding: 5px; background: #95a5a6; color:white;" onclick="editarObs('${docSnap.id}')">Editar Obs</button>
-              <button style="font-size: 0.7rem; padding: 5px; background: #34495e; color:white;" onclick="agendarCarro('${docSnap.id}')">Agendar</button>
+            <div style="display:flex; gap:5px;">
+              <button style="background:#95a5a6; color:white; font-size:0.7rem;" onclick="editarObs('${docSnap.id}')">Obs</button>
+              <button style="background:#34495e; color:white; font-size:0.7rem;" onclick="abrirAgenda('${docSnap.id}', '${carro.nome}')">📅 Agenda Semanal</button>
             </div>
-
             ${acaoBotao}
-            ${carro.usuario ? `<br><small style="color: #777;">👤 Com: <b>${carro.usuarioNome || carro.usuario}</b></small>` : ""}
-            ${botaoExcluir}
+            ${carro.usuario ? `<small style="color:#888;">👤 Com: ${carro.usuarioNome || carro.usuario}</small>` : ""}
+            ${isAdmin ? `<button style="background:#c0392b; color:white; font-size:0.7rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir</button>` : ""}
           </div>`;
       });
     }
 
-    // Histórico em tempo real
-    onSnapshot(query(collection(db, "historico"), orderBy("data", "desc"), limit(20)), (snap) => {
-      const tabela = document.getElementById("tabelaHistorico");
-      tabela.innerHTML = "";
-      snap.forEach((d) => {
-        const log = d.data();
-        const cor = log.acao === "pegou" ? "#27ae60" : "#e67e22";
-        tabela.innerHTML += `<div style="background:#fff; border:1px solid #eee; padding:10px; margin-bottom:5px; border-radius:8px; font-size:0.8rem;">
-          <b style="color:${cor}">[${log.acao.toUpperCase()}]</b> ${log.carroNome} por ${log.usuarioNome || log.usuario} 
-          ${log.km ? `(KM: ${log.km})` : ""} <small style="float:right">${log.data?.toDate().toLocaleString('pt-BR')}</small>
-        </div>`;
+    // --- LOGICA DA AGENDA ---
+    window.fecharModal = () => document.getElementById("modalAgenda").style.display = "none";
+
+    window.abrirAgenda = async (id, nome) => {
+      carroIdAtual = id;
+      document.getElementById("tituloModal").innerText = "Agenda: " + nome;
+      document.getElementById("modalAgenda").style.display = "block";
+      const snap = await getDoc(doc(db, "carros", id));
+      desenharGrade(snap.data().agendaGrade || {});
+    };
+
+    function desenharGrade(agenda) {
+      const grade = document.getElementById("gradeHorarios");
+      grade.innerHTML = "<div></div>"; 
+      DIAS.forEach(dia => grade.innerHTML += `<div class="dia-cabecalho">${dia}</div>`);
+      HORAS.forEach(hora => {
+        grade.innerHTML += `<div class="col-hora">${hora}</div>`;
+        DIAS.forEach(dia => {
+          const idSlot = `${dia}-${hora}`;
+          const res = agenda[idSlot];
+          const isAdmin = emailsAdmins.includes(usuarioLogado);
+          let classe = "slot-disponivel";
+          let cont = "";
+          let click = `onclick="reservarSlot('${idSlot}')"`;
+
+          if (res) {
+            const souDono = res.email === usuarioLogado;
+            classe = souDono ? "slot-meu" : "slot-ocupado";
+            cont = `<small>${res.nome.split(' ')[0]}</small>`;
+            if (souDono || isAdmin) {
+              click = `onclick="cancelarSlot('${idSlot}')"`;
+              cont += `<button class="btn-cancela-slot">X</button>`;
+            } else {
+              click = `onclick="mostrarMensagem('Ocupado por ${res.nome}', '#e67e22')"`;
+            }
+          }
+          grade.innerHTML += `<div class="slot-agenda ${classe}" ${click}>${cont}</div>`;
+        });
       });
-    });
+    }
 
-    // Funções Globais
-   window.pegarCarro = async (id) => {
-    try {
+    window.reservarSlot = async (idSlot) => {
+      const ref = doc(db, "carros", carroIdAtual);
+      const snap = await getDoc(ref);
+      const agenda = snap.data().agendaGrade || {};
+      agenda[idSlot] = { nome: nomeUsuarioLogado || usuarioLogado, email: usuarioLogado, data: new Date() };
+      await updateDoc(ref, { agendaGrade: agenda });
+      desenharGrade(agenda);
+      mostrarMensagem("Reservado!");
+    };
+
+    window.cancelarSlot = async (idSlot) => {
+      if(!confirm("Cancelar reserva?")) return;
+      const ref = doc(db, "carros", carroIdAtual);
+      const snap = await getDoc(ref);
+      const agenda = snap.data().agendaGrade || {};
+      delete agenda[idSlot];
+      await updateDoc(ref, { agendaGrade: agenda });
+      desenharGrade(agenda);
+      mostrarMensagem("Cancelado!");
+    };
+
+    // --- FUNÇÕES DE CARRO ---
+    window.pegarCarro = async (id) => {
       const user = auth.currentUser;
-      // Pega o nome do perfil (displayName). Se não tiver, usa o e-mail.
-      const nomeParaGravar = user.displayName || user.email;
-
-      // 1. Verifica se o motorista já está com algum carro (Trava de segurança)
       const q = query(collection(db, "carros"), where("usuario", "==", user.email));
       const qSnap = await getDocs(q);
-      
-      if (!qSnap.empty) {
-        return mostrarMensagem("Você já tem um veículo em uso!", "#e74c3c");
-      }
-
+      if (!qSnap.empty) return mostrarMensagem("Você já tem um veículo!", "#e74c3c");
       const ref = doc(db, "carros", id);
       const snap = await getDoc(ref);
-      const dadosCarro = snap.data();
-
-      // 2. Atualiza o status do carro no banco de dados
-      await updateDoc(ref, { 
-        status: "em_uso", 
-        usuario: user.email, 
-        usuarioNome: nomeParaGravar, // <--- Aqui grava o nome que o card vai ler
-        updatedAt: new Date() 
-      });
-
-      // 3. Registra a saída no histórico com o nome real
-      await addDoc(collection(db, "historico"), { 
-        carroId: id, 
-        carroNome: dadosCarro.nome, 
-        usuario: user.email,
-        usuarioNome: nomeParaGravar, // <--- Nome no histórico para o Gestor ver
-        acao: "pegou", 
-        data: new Date() 
-      });
-
-      mostrarMensagem(`Veículo liberado para ${nomeParaGravar}!`);
-      } catch (err) { 
-        mostrarMensagem("Erro ao retirar: " + err.message, "#e74c3c"); 
-      }
+      await updateDoc(ref, { status: "em_uso", usuario: user.email, usuarioNome: user.displayName || user.email, updatedAt: new Date() });
+      await addDoc(collection(db, "historico"), { carroId: id, carroNome: snap.data().nome, usuario: user.email, usuarioNome: user.displayName || user.email, acao: "pegou", data: new Date() });
+      mostrarMensagem("Veículo retirado!");
     };
 
     window.devolverCarro = async (id) => {
@@ -245,154 +257,76 @@
       const snap = await getDoc(ref);
       const carro = snap.data();
       const kmAnterior = parseFloat(carro.ultimoKM) || 0;
-
-      const novoKM = prompt(`KM anterior: ${kmAnterior}. Digite o KM atual:`);
-      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
-        return mostrarMensagem("KM inválido ou menor que o anterior!", "#e74c3c", 4000);
-      }
-
+      const novoKM = prompt(`KM anterior: ${kmAnterior}. KM atual:`);
+      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) return mostrarMensagem("KM inválido!", "#e74c3c");
       const local = prompt("Local (GHPC, G-MOTION ou KPT):").toUpperCase();
-      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) return mostrarMensagem("Local inválido!", "#e74c3c");
-
-      try {
-        await updateDoc(ref, { status: "disponivel", usuario: "", usuarioNome: "", ultimoKM: novoKM, localDevolucao: local, updatedAt: new Date() });
-        await addDoc(collection(db, "historico"), { 
-          carroId: id, carroNome: carro.nome, usuario: usuarioLogado, 
-          usuarioNome: nomeUsuarioLogado || usuarioLogado, acao: "devolveu", km: novoKM, local: local, data: new Date() 
-        });
-        mostrarMensagem("Devolvido com sucesso!");
-      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+      await updateDoc(ref, { status: "disponivel", usuario: "", usuarioNome: "", ultimoKM: novoKM, localDevolucao: local, updatedAt: new Date() });
+      await addDoc(collection(db, "historico"), { carroId: id, carroNome: carro.nome, usuario: usuarioLogado, acao: "devolveu", km: novoKM, local: local, data: new Date() });
+      mostrarMensagem("Devolvido!");
     };
 
+    // --- AUTH E BOILERPLATE ---
     window.login = async () => {
-      const email = document.getElementById("emailLogin").value;
-      const senha = document.getElementById("senhaLogin").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, senha);
-        mostrarMensagem("Acesso autorizado!");
-      } catch (err) { mostrarMensagem("E-mail ou senha incorretos!", "#e74c3c"); }
+      try { await signInWithEmailAndPassword(auth, document.getElementById("emailLogin").value, document.getElementById("senhaLogin").value); } 
+      catch (e) { mostrarMensagem("Erro no login", "#e74c3c"); }
     };
 
     window.registrar = async () => {
       const nome = document.getElementById("nomeRegistro").value;
       const email = document.getElementById("emailRegistro").value;
       const senha = document.getElementById("senhaRegistro").value;
-
-      if (!nome || !email || !senha) return mostrarMensagem("Preencha todos os campos!", "#e74c3c");
-
+      if(!nome || !email || !senha) return mostrarMensagem("Preencha tudo", "#e74c3c");
       try {
         const res = await createUserWithEmailAndPassword(auth, email, senha);
-        // IMPORTANTE: Salva o nome no perfil do Firebase imediatamente
         await updateProfile(res.user, { displayName: nome });
-        mostrarMensagem("Conta criada para " + nome);
-      } catch (err) { mostrarMensagem("Erro: " + err.message, "#e74c3c"); }
+        mostrarMensagem("Conta criada!");
+      } catch (e) { mostrarMensagem("Erro ao criar conta", "#e74c3c"); }
     };
 
     window.logout = () => signOut(auth);
-    window.toggleSenha = (idInput) => {
-      const campo = document.getElementById(idInput);
-      if (campo) {
-        campo.type = campo.type === "password" ? "text" : "password";
-      }
+    window.toggleSenha = (id) => { const el = document.getElementById(id); el.type = el.type === "password" ? "text" : "password"; };
+    window.alternarAuth = (t) => {
+      const isL = t === 'login';
+      document.getElementById("formLogin").style.display = isL ? "block" : "none";
+      document.getElementById("formRegistro").style.display = isL ? "none" : "block";
+      document.getElementById("tabLogin").style.background = isL ? "#3498db" : "#ecf0f1";
+      document.getElementById("tabRegistro").style.background = isL ? "#ecf0f1" : "#2ecc71";
     };
+    window.editarObs = async (id) => {
+      const obs = prompt("Observação:");
+      if(obs !== null) await updateDoc(doc(db, "carros", id), { observacao: obs });
+    };
+    window.cadastrarCarro = async () => {
+      const n = document.getElementById("novoCarroNome").value;
+      if(n) { await addDoc(collection(db, "carros"), { nome: n, status: "disponivel", usuario: "", updatedAt: new Date() }); document.getElementById("novoCarroNome").value = ""; }
+    };
+    window.excluirCarro = async (id, n) => { if(confirm(`Excluir ${n}?`)) await deleteDoc(doc(db, "carros", id)); };
     window.toggleHistorico = () => {
       const c = document.getElementById("conteudoHistorico");
       c.style.display = c.style.display === "block" ? "none" : "block";
     };
-    window.editarObs = async (id) => {
-      const obs = prompt("Observação:");
-      if (obs !== null) await updateDoc(doc(db, "carros", id), { observacao: obs });
-    };
-    window.agendarCarro = async (id) => {
-      const ag = prompt("Agendamento (Ex: Ivan 21/03 13h):");
-      if (ag !== null) await updateDoc(doc(db, "carros", id), { agendamento: ag });
-    };
-    window.cadastrarCarro = async () => {
-      const n = document.getElementById("novoCarroNome").value;
-      if (n) {
-        await addDoc(collection(db, "carros"), { nome: n, status: "disponivel", usuario: "", updatedAt: new Date() });
-        document.getElementById("novoCarroNome").value = "";
-      }
-    };
-    window.excluirCarro = async (id, nome) => {
-      if (confirm(`Excluir ${nome}?`)) await deleteDoc(doc(db, "carros", id));
-    };
 
     onAuthStateChanged(auth, (user) => {
-      const authDiv = document.getElementById("authDiv");
-      const privDiv = document.getElementById("conteudoPrivado");
-      const adminDiv = document.getElementById("adminDiv");
-      const info = document.getElementById("userInfo");
-
       if (user) {
-        // 1. Define as variáveis do usuário logado
-        usuarioLogado = user.email;
-        nomeUsuarioLogado = user.displayName;
-
-        // 2. Ajusta a interface
-        authDiv.style.display = "none";
-        privDiv.style.display = "block";
-        info.innerText = "👤 " + (user.displayName || user.email);
-        adminDiv.style.display = emailsAdmins.includes(user.email) ? "block" : "none";
-
-        // 3. --- SÓ AGORA CHAMA OS SNAPSHOTS ---
-        // Escuta Carros
-        onSnapshot(collection(db, "carros"), (snap) => {
-            renderizar(snap);
-        }, (error) => {
-            console.error("Erro nos carros:", error);
+        usuarioLogado = user.email; nomeUsuarioLogado = user.displayName;
+        document.getElementById("authDiv").style.display = "none";
+        document.getElementById("conteudoPrivado").style.display = "block";
+        document.getElementById("userInfo").innerText = "👤 " + (user.displayName || user.email);
+        document.getElementById("adminDiv").style.display = emailsAdmins.includes(user.email) ? "block" : "none";
+        onSnapshot(collection(db, "carros"), (snap) => renderizar(snap));
+        const qH = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
+        onSnapshot(qH, (snap) => {
+          const tab = document.getElementById("tabelaHistorico"); tab.innerHTML = "";
+          snap.forEach(d => {
+            const log = d.data();
+            tab.innerHTML += `<div style="text-align:left; font-size:0.7rem; border-bottom:1px solid #eee; padding:5px;"><b>${log.acao.toUpperCase()}</b>: ${log.carroNome} por ${log.usuarioNome || log.usuario}</div>`;
+          });
         });
-
-        // Escuta Histórico (com ordenação e limite)
-        const qHistorico = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
-        onSnapshot(qHistorico, (snap) => {
-            const tabela = document.getElementById("tabelaHistorico");
-            tabela.innerHTML = "";
-            snap.forEach((d) => {
-                const log = d.data();
-                const cor = log.acao === "pegou" ? "#27ae60" : "#e67e22";
-                tabela.innerHTML += `
-                  <div style="background:#fff; border:1px solid #eee; padding:10px; margin-bottom:5px; border-radius:8px; font-size:0.8rem;">
-                    <b style="color:${cor}">[${log.acao.toUpperCase()}]</b> ${log.carroNome} por ${log.usuarioNome || log.usuario} 
-                    <small style="float:right">${log.data?.toDate().toLocaleString('pt-BR')}</small>
-                  </div>`;
-            });
-        }, (error) => {
-            console.error("Erro no histórico:", error);
-        });
-
       } else {
-        // Se deslogar, esconde tudo e limpa as variáveis
-        usuarioLogado = null;
-        nomeUsuarioLogado = null;
-        authDiv.style.display = "block";
-        privDiv.style.display = "none";
+        document.getElementById("authDiv").style.display = "block";
+        document.getElementById("conteudoPrivado").style.display = "none";
       }
     });
-
-    window.limparObs = async (id) => {
-      if (confirm("Deseja apagar esta observação?")) {
-        await updateDoc(doc(db, "carros", id), { observacao: "" });
-        mostrarMensagem("Observação removida!");
-      }
-    };
-
-    window.limparAgenda = async (id) => {
-      if (confirm("Deseja cancelar este agendamento?")) {
-        await updateDoc(doc(db, "carros", id), { agendamento: "" });
-        mostrarMensagem("Agendamento cancelado!");
-      }
-    };
-
-    window.alternarAuth = (tipo) => {
-      const isLogin = tipo === 'login';
-      document.getElementById("formLogin").style.display = isLogin ? "block" : "none";
-      document.getElementById("formRegistro").style.display = isLogin ? "none" : "block";
-      document.getElementById("tabLogin").style.background = isLogin ? "#3498db" : "#ecf0f1";
-      document.getElementById("tabLogin").style.color = isLogin ? "white" : "#333";
-      document.getElementById("tabRegistro").style.background = isLogin ? "#ecf0f1" : "#2ecc71";
-      document.getElementById("tabRegistro").style.color = isLogin ? "#333" : "white";
-    };
   </script>
 </body>
 </html>
