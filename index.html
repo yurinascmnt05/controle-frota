@@ -39,8 +39,78 @@
     .slot-meu { background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32; }
     .slot-ocupado small { font-size: 0.55rem; font-weight: bold; }
     .btn-cancela-slot { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; border: none; font-size: 0.6rem; padding: 2px 5px; border-radius: 0 0 0 5px; cursor: pointer; }
+    /* Ajuste de toque para botões */
+    button, .slot-agenda, .close-modal {
+        min-height: 44px; /* Tamanho mínimo recomendado pela Apple/Google */
+        touch-action: manipulation;
+    }
+
+    #container {
+        width: 95%;
+        max-width: 500px;
+        padding: 15px;
+        margin: 10px auto;
+    }
+
+    /* Agenda Semanal no Mobile */
+    .grade-semanal {
+        display: grid;
+        grid-template-columns: 45px repeat(5, 1fr); /* Diminuído para caber */
+        gap: 3px;
+        overflow-x: auto; /* Permite scroll lateral se a tela for muito pequena */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .slot-agenda {
+        height: 60px; /* Aumentado para facilitar o clique */
+        font-size: 0.6rem;
+    }
+
+    /* Esconder scrollbar da grade para ficar mais limpo */
+    .grade-semanal::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Card do Carro mais compacto */
+    .carro-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .carro-card button {
+        font-size: 1.1rem; /* Botão principal maior */
+        padding: 12px;
+    }
+
+    button:active, .slot-agenda:active {
+      transform: scale(0.98);
+      opacity: 0.8;
+    }
+
+    /* Estilo para a Logo */
+    .app-logo {
+        /* Dimensões ideais */
+        width: 100%;       /* Ocupa a largura do container em telas pequenas */
+        max-width: 200px;  /* Largura máxima no PC (evita que fique gigante) */
+        height: auto;      /* Mantém a proporção da imagem (não achata) */
+        
+        /* Centralização e Espaçamento */
+        display: block;    /* Garante que margens funcionem */
+        margin: 0 auto 20px auto; /* Centraliza horizontalmente e dá espaço abaixo */
+        
+        /* Mobile-friendly */
+        -webkit-user-drag: none; /* Impede que o usuário "arraste" a imagem no celular */
+    }
+
+    h2{
+      color: rgb(0, 0, 124);
+    }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2c3e50">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
@@ -48,6 +118,9 @@
   <div id="mensagem"></div>
 
   <div id="container">
+
+    <img src="logo.png" alt="Logo Empresa" class="app-logo">
+
     <div id="authDiv">
       <div style="display: flex; margin-bottom: 20px;">
         <button onclick="alternarAuth('login')" id="tabLogin" style="flex:1; background:#3498db; color:white;">Login</button>
@@ -129,7 +202,7 @@
     let nomeUsuarioLogado = null;
     let carroIdAtual = null;
     const DIAS = ["SEG", "TER", "QUA", "QUI", "SEX"];
-    const HORAS = ["08:00", "09:00", "10:00", "11:00", "12:00","13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    const HORAS = ["08:00", "09:00", "10:00", "11:00", "12:00","13:00", "14:00", "15:00", "16:00", "17:00",  "18:00"];
 
     const mostrarMensagem = (texto, cor="#2ecc71", tempo = 2500) => {
       const msg = document.getElementById("mensagem");
@@ -173,6 +246,7 @@
             ${acaoBotao}
             ${carro.usuario ? `<small style="color:#888;">👤 Com: ${carro.usuarioNome || carro.usuario}</small>` : ""}
             ${isAdmin ? `<button style="background:#c0392b; color:white; font-size:0.7rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir</button>` : ""}
+            ${isAdmin ? `<button style="background:#8e44ad; color:white; font-size:0.7rem;" onclick="resetarAgendaCarro('${docSnap.id}', '${carro.nome}')">Resetar Agenda</button>` : ""}
           </div>`;
       });
     }
@@ -257,12 +331,42 @@
       const snap = await getDoc(ref);
       const carro = snap.data();
       const kmAnterior = parseFloat(carro.ultimoKM) || 0;
-      const novoKM = prompt(`KM anterior: ${kmAnterior}. KM atual:`);
-      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) return mostrarMensagem("KM inválido!", "#e74c3c");
+
+      const novoKM = prompt(`KM anterior: ${kmAnterior}. Digite o KM atual:`);
+      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
+        return mostrarMensagem("KM inválido ou menor que o anterior!", "#e74c3c", 4000);
+      }
+
       const local = prompt("Local (GHPC, G-MOTION ou KPT):").toUpperCase();
-      await updateDoc(ref, { status: "disponivel", usuario: "", usuarioNome: "", ultimoKM: novoKM, localDevolucao: local, updatedAt: new Date() });
-      await addDoc(collection(db, "historico"), { carroId: id, carroNome: carro.nome, usuario: usuarioLogado, acao: "devolveu", km: novoKM, local: local, data: new Date() });
-      mostrarMensagem("Devolvido!");
+      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) return mostrarMensagem("Local inválido!", "#e74c3c");
+
+      try {
+        // 1. Limpa os dados do carro
+        await updateDoc(ref, { 
+          status: "disponivel", 
+          usuario: "", 
+          usuarioNome: "", 
+          ultimoKM: novoKM, 
+          localDevolucao: local, 
+          updatedAt: new Date() 
+        });
+
+        // 2. Grava no histórico (CORREÇÃO AQUI: Prioriza o nomeUsuarioLogado)
+        await addDoc(collection(db, "historico"), { 
+          carroId: id, 
+          carroNome: carro.nome, 
+          usuario: usuarioLogado, // E-mail para controle interno
+          usuarioNome: nomeUsuarioLogado || usuarioLogado, // Nome para exibição visual
+          acao: "devolveu", 
+          km: novoKM, 
+          local: local, 
+          data: new Date() 
+        });
+
+        mostrarMensagem("Devolvido com sucesso!");
+      } catch (err) { 
+        mostrarMensagem("Erro ao devolver", "#e74c3c"); 
+      }
     };
 
     // --- AUTH E BOILERPLATE ---
@@ -327,6 +431,21 @@
         document.getElementById("conteudoPrivado").style.display = "none";
       }
     });
+    window.resetarAgendaCarro = async (id, nome) => {
+      if (!confirm(`Deseja LIMPAR TODA a agenda do veículo ${nome}?`)) return;
+
+      try {
+        const ref = doc(db, "carros", id);
+        // Definimos o objeto agendaGrade como vazio {}
+        await updateDoc(ref, { agendaGrade: {} });
+        
+        mostrarMensagem("Agenda resetada com sucesso!");
+        // Se o modal estiver aberto, fecha ou redesenha
+        fecharModal();
+      } catch (err) {
+        mostrarMensagem("Erro ao resetar agenda", "#e74c3c");
+      }
+    };
   </script>
 </body>
 </html>
