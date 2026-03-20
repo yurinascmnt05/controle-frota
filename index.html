@@ -40,13 +40,29 @@
 
   <div id="container">
     <div id="authDiv">
-      <input type="email" id="email" placeholder="Email">
-      <div class="password-container">
-        <input type="password" id="senha" placeholder="Senha">
-        <i class="fas fa-eye toggle-password" id="olhoIcone" onclick="toggleSenha()"></i>
+      <div style="display: flex; margin-bottom: 20px;">
+        <button onclick="alternarAuth('login')" id="tabLogin" style="flex:1; background:#3498db; color:white;">Login</button>
+        <button onclick="alternarAuth('registro')" id="tabRegistro" style="flex:1; background:#ecf0f1; color:#333;">Novo Cadastro</button>
       </div>
-      <button class="btn-login" onclick="login()">Login</button>
-      <button class="btn-register" onclick="registrar()">Registrar</button>
+
+      <div id="formLogin">
+        <input type="email" id="emailLogin" placeholder="E-mail">
+        <div class="password-container">
+          <input type="password" id="senhaLogin" placeholder="Senha">
+          <i class="fas fa-eye toggle-password" onclick="toggleSenha('senhaLogin')"></i>
+        </div>
+        <button class="btn-login" onclick="login()" style="width:100%">Entrar no Sistema</button>
+      </div>
+
+      <div id="formRegistro" style="display: none;">
+        <input type="text" id="nomeRegistro" placeholder="Seu Nome Completo">
+        <input type="email" id="emailRegistro" placeholder="E-mail Corporativo">
+        <div class="password-container">
+          <input type="password" id="senhaRegistro" placeholder="Criar Senha (mín. 6 dígitos)">
+          <i class="fas fa-eye toggle-password" onclick="toggleSenha('senhaRegistro')"></i>
+        </div>
+        <button class="btn-register" onclick="registrar()" style="width:100%">Criar Minha Conta</button>
+      </div>
     </div>
 
     <div id="conteudoPrivado" style="display: none;">
@@ -91,7 +107,7 @@
       appId: "1:241729095537:web:fcfb1e2a5fe7c3fca098d0"
     };
 
-    const emailsAdmins = ["yuri@teste.com"];
+    const emailsAdmins = ["ti@ghpc.com.br"];
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
@@ -136,26 +152,34 @@
         const podeLimparObs = isAdmin;
 
         lista.innerHTML += `
-      <div class="carro-card">
-        <b>${carro.nome}</b>
-        <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
-        
-        <div style="margin-top: 10px; font-size: 0.85rem; color: #444; text-align: left;">
-          <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span><br>
-          <span>🏢 Local: <strong>${carro.localDevolucao || "---"}</strong></span><br>
-          
-          <span style="display:block; margin-top:5px;">
-            📝 <b>Obs:</b> ${carro.observacao || "Nenhuma"} 
-            ${podeLimparObs ? `<i class="fas fa-times-circle" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparObs('${docSnap.id}')" title="Limpar Obs"></i>` : ""}
-          </span>
+          <div class="carro-card">
+            <b>${carro.nome}</b>
+            <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
+            
+            <div style="margin-top: 10px; font-size: 0.85rem; color: #444; text-align: left;">
+              <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span><br>
+              <span>🏢 Local: <strong>${carro.localDevolucao || "---"}</strong></span><br>
+              
+              <span style="display:block; margin-top:5px;">
+                📝 <b>Obs:</b> ${carro.observacao || "Nenhuma"} 
+                ${podeLimparObs && carro.observacao ? `<i class="fas fa-times-circle" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparObs('${docSnap.id}')" title="Limpar Obs"></i>` : ""}
+              </span>
 
-          <span style="display:block; color:#2980b9; margin-top:5px;">
-            📅 <b>Agenda:</b> ${carro.agendamento || "Sem reservas"}
-            ${podeLimparAgenda && carro.agendamento ? `<i class="fas fa-calendar-times" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparAgenda('${docSnap.id}')" title="Cancelar Agenda"></i>` : ""}
-          </span>
-        </div>
-        
-        `;
+              <span style="display:block; color:#2980b9; margin-top:5px;">
+                📅 <b>Agenda:</b> ${carro.agendamento || "Sem reservas"}
+                ${podeLimparAgenda && carro.agendamento ? `<i class="fas fa-calendar-times" style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="limparAgenda('${docSnap.id}')" title="Cancelar Agenda"></i>` : ""}
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 5px; margin-top: 10px;">
+              <button style="font-size: 0.7rem; padding: 5px; background: #95a5a6; color:white;" onclick="editarObs('${docSnap.id}')">Editar Obs</button>
+              <button style="font-size: 0.7rem; padding: 5px; background: #34495e; color:white;" onclick="agendarCarro('${docSnap.id}')">Agendar</button>
+            </div>
+
+            ${acaoBotao}
+            ${carro.usuario ? `<br><small style="color: #777;">👤 Com: <b>${carro.usuarioNome || carro.usuario}</b></small>` : ""}
+            ${botaoExcluir}
+          </div>`;
       });
     }
 
@@ -174,27 +198,46 @@
     });
 
     // Funções Globais
-    window.pegarCarro = async (id) => {
-      try {
-        const q = query(collection(db, "carros"), where("usuario", "==", usuarioLogado));
-        const qSnap = await getDocs(q);
-        if (!qSnap.empty) return mostrarMensagem("Você já tem um carro!", "#e74c3c");
+   window.pegarCarro = async (id) => {
+    try {
+      const user = auth.currentUser;
+      // Pega o nome do perfil (displayName). Se não tiver, usa o e-mail.
+      const nomeParaGravar = user.displayName || user.email;
 
-        const ref = doc(db, "carros", id);
-        const snap = await getDoc(ref);
-        await updateDoc(ref, { 
-          status: "em_uso", 
-          usuario: usuarioLogado, 
-          usuarioNome: nomeUsuarioLogado || usuarioLogado,
-          updatedAt: new Date() 
-        });
-        await addDoc(collection(db, "historico"), { 
-          carroId: id, carroNome: snap.data().nome, 
-          usuario: usuarioLogado, usuarioNome: nomeUsuarioLogado || usuarioLogado,
-          acao: "pegou", data: new Date() 
-        });
-        mostrarMensagem("Carro liberado!");
-      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+      // 1. Verifica se o motorista já está com algum carro (Trava de segurança)
+      const q = query(collection(db, "carros"), where("usuario", "==", user.email));
+      const qSnap = await getDocs(q);
+      
+      if (!qSnap.empty) {
+        return mostrarMensagem("Você já tem um veículo em uso!", "#e74c3c");
+      }
+
+      const ref = doc(db, "carros", id);
+      const snap = await getDoc(ref);
+      const dadosCarro = snap.data();
+
+      // 2. Atualiza o status do carro no banco de dados
+      await updateDoc(ref, { 
+        status: "em_uso", 
+        usuario: user.email, 
+        usuarioNome: nomeParaGravar, // <--- Aqui grava o nome que o card vai ler
+        updatedAt: new Date() 
+      });
+
+      // 3. Registra a saída no histórico com o nome real
+      await addDoc(collection(db, "historico"), { 
+        carroId: id, 
+        carroNome: dadosCarro.nome, 
+        usuario: user.email,
+        usuarioNome: nomeParaGravar, // <--- Nome no histórico para o Gestor ver
+        acao: "pegou", 
+        data: new Date() 
+      });
+
+      mostrarMensagem(`Veículo liberado para ${nomeParaGravar}!`);
+      } catch (err) { 
+        mostrarMensagem("Erro ao retirar: " + err.message, "#e74c3c"); 
+      }
     };
 
     window.devolverCarro = async (id) => {
@@ -222,27 +265,35 @@
     };
 
     window.login = async () => {
-      const e = document.getElementById("email").value;
-      const s = document.getElementById("senha").value;
-      try { await signInWithEmailAndPassword(auth, e, s); } catch (err) { mostrarMensagem("Erro no login", "#e74c3c"); }
+      const email = document.getElementById("emailLogin").value;
+      const senha = document.getElementById("senhaLogin").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+        mostrarMensagem("Acesso autorizado!");
+      } catch (err) { mostrarMensagem("E-mail ou senha incorretos!", "#e74c3c"); }
     };
 
     window.registrar = async () => {
-      const nome = prompt("Qual seu nome?");
-      const e = document.getElementById("email").value;
-      const s = document.getElementById("senha").value;
-      if (!nome) return;
+      const nome = document.getElementById("nomeRegistro").value;
+      const email = document.getElementById("emailRegistro").value;
+      const senha = document.getElementById("senhaRegistro").value;
+
+      if (!nome || !email || !senha) return mostrarMensagem("Preencha todos os campos!", "#e74c3c");
+
       try {
-        const res = await createUserWithEmailAndPassword(auth, e, s);
+        const res = await createUserWithEmailAndPassword(auth, email, senha);
+        // IMPORTANTE: Salva o nome no perfil do Firebase imediatamente
         await updateProfile(res.user, { displayName: nome });
-        mostrarMensagem("Conta criada!");
-      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
+        mostrarMensagem("Conta criada para " + nome);
+      } catch (err) { mostrarMensagem("Erro: " + err.message, "#e74c3c"); }
     };
 
     window.logout = () => signOut(auth);
-    window.toggleSenha = () => {
-      const s = document.getElementById("senha");
-      s.type = s.type === "password" ? "text" : "password";
+    window.toggleSenha = (idInput) => {
+      const campo = document.getElementById(idInput);
+      if (campo) {
+        campo.type = campo.type === "password" ? "text" : "password";
+      }
     };
     window.toggleHistorico = () => {
       const c = document.getElementById("conteudoHistorico");
@@ -268,19 +319,80 @@
     };
 
     onAuthStateChanged(auth, (user) => {
+      const authDiv = document.getElementById("authDiv");
+      const privDiv = document.getElementById("conteudoPrivado");
+      const adminDiv = document.getElementById("adminDiv");
+      const info = document.getElementById("userInfo");
+
       if (user) {
+        // 1. Define as variáveis do usuário logado
         usuarioLogado = user.email;
         nomeUsuarioLogado = user.displayName;
-        document.getElementById("authDiv").style.display = "none";
-        document.getElementById("conteudoPrivado").style.display = "block";
-        document.getElementById("userInfo").innerText = "👤 " + (user.displayName || user.email);
-        document.getElementById("adminDiv").style.display = emailsAdmins.includes(user.email) ? "block" : "none";
-        onSnapshot(collection(db, "carros"), (snap) => renderizar(snap));
+
+        // 2. Ajusta a interface
+        authDiv.style.display = "none";
+        privDiv.style.display = "block";
+        info.innerText = "👤 " + (user.displayName || user.email);
+        adminDiv.style.display = emailsAdmins.includes(user.email) ? "block" : "none";
+
+        // 3. --- SÓ AGORA CHAMA OS SNAPSHOTS ---
+        // Escuta Carros
+        onSnapshot(collection(db, "carros"), (snap) => {
+            renderizar(snap);
+        }, (error) => {
+            console.error("Erro nos carros:", error);
+        });
+
+        // Escuta Histórico (com ordenação e limite)
+        const qHistorico = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
+        onSnapshot(qHistorico, (snap) => {
+            const tabela = document.getElementById("tabelaHistorico");
+            tabela.innerHTML = "";
+            snap.forEach((d) => {
+                const log = d.data();
+                const cor = log.acao === "pegou" ? "#27ae60" : "#e67e22";
+                tabela.innerHTML += `
+                  <div style="background:#fff; border:1px solid #eee; padding:10px; margin-bottom:5px; border-radius:8px; font-size:0.8rem;">
+                    <b style="color:${cor}">[${log.acao.toUpperCase()}]</b> ${log.carroNome} por ${log.usuarioNome || log.usuario} 
+                    <small style="float:right">${log.data?.toDate().toLocaleString('pt-BR')}</small>
+                  </div>`;
+            });
+        }, (error) => {
+            console.error("Erro no histórico:", error);
+        });
+
       } else {
-        document.getElementById("authDiv").style.display = "block";
-        document.getElementById("conteudoPrivado").style.display = "none";
+        // Se deslogar, esconde tudo e limpa as variáveis
+        usuarioLogado = null;
+        nomeUsuarioLogado = null;
+        authDiv.style.display = "block";
+        privDiv.style.display = "none";
       }
     });
+
+    window.limparObs = async (id) => {
+      if (confirm("Deseja apagar esta observação?")) {
+        await updateDoc(doc(db, "carros", id), { observacao: "" });
+        mostrarMensagem("Observação removida!");
+      }
+    };
+
+    window.limparAgenda = async (id) => {
+      if (confirm("Deseja cancelar este agendamento?")) {
+        await updateDoc(doc(db, "carros", id), { agendamento: "" });
+        mostrarMensagem("Agendamento cancelado!");
+      }
+    };
+
+    window.alternarAuth = (tipo) => {
+      const isLogin = tipo === 'login';
+      document.getElementById("formLogin").style.display = isLogin ? "block" : "none";
+      document.getElementById("formRegistro").style.display = isLogin ? "none" : "block";
+      document.getElementById("tabLogin").style.background = isLogin ? "#3498db" : "#ecf0f1";
+      document.getElementById("tabLogin").style.color = isLogin ? "white" : "#333";
+      document.getElementById("tabRegistro").style.background = isLogin ? "#ecf0f1" : "#2ecc71";
+      document.getElementById("tabRegistro").style.color = isLogin ? "#333" : "white";
+    };
   </script>
 </body>
 </html>
