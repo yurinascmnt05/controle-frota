@@ -132,8 +132,9 @@
             <b>${carro.nome}</b>
             <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
     
-            <div style="margin-top: 15px; margin-bottom: 15px; font-size: 0.9rem; color: #555;">
-              📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong>
+            <div style="margin-top: 15px; margin-bottom: 15px; font-size: 0.9rem; color: #444; text-align: left; display: flex; flex-direction: column; gap: 5px;">
+            <span>📍 Último KM: <strong>${carro.ultimoKM || "---"}</strong></span>
+            <span>🏢 Local: <strong style="color: #2c3e50;">${carro.localDevolucao || "Não informado"}</strong></span>
             </div>
 
             ${acaoBotao}
@@ -152,7 +153,8 @@
         const log = docSnap.data();
         const dataFormatada = log.data?.toDate().toLocaleString('pt-BR') || "---";
         const corAcao = log.acao === "pegou" ? "#27ae60" : "#e67e22";
-        const infoKM = log.km ? ` (KM: ${log.km})` : "";
+        // Procure esta linha e adicione o local:
+        const infoKM = log.km ? ` (KM: ${log.km}${log.local ? ` - Local: ${log.local}` : ""})` : "";
         tabela.innerHTML += `<div style="background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 5px; border-radius: 8px; text-align: left; font-size: 0.9rem;"><span style="color: ${corAcao}; font-weight: bold;">[${log.acao.toUpperCase()}]</span> <b>${log.carroNome}</b> por <i>${log.usuario}</i>${infoKM} <small style="float: right; color: #888;">${dataFormatada}</small></div>`;
       });
     });
@@ -174,18 +176,56 @@
     };
 
     window.devolverCarro = async (id) => {
-      const km = prompt("Qual a quilometragem atual do veículo?");
-      if (!km || isNaN(km)) return mostrarMensagem("KM obrigatório!", "#e74c3c");
-      try {
-        const ref = doc(db, "carros", id);
-        const snap = await getDoc(ref);
-        const carro = snap.data();
-        await updateDoc(ref, { status: "disponivel", usuario: "", ultimoKM: km, updatedAt: new Date() });
-        await addDoc(collection(db, "historico"), { carroId: id, carroNome: carro.nome, usuario: usuarioLogado, acao: "devolveu", km: km, data: new Date() });
-        mostrarMensagem("Carro devolvido!");
-      } catch (err) { mostrarMensagem(err.message, "#e74c3c"); }
-    };
+      const ref = doc(db, "carros", id);
+      const snap = await getDoc(ref);
+      const carro = snap.data();
+      const kmAnterior = parseFloat(carro.ultimoKM) || 0;
 
+      // 1. Pergunta o KM e valida se é maior que o anterior
+      const novoKM = prompt(`KM anterior era ${kmAnterior}. Digite o KM atual:`);
+  
+      if (!novoKM || isNaN(novoKM)) {
+        return mostrarMensagem("KM obrigatório e deve ser um número!", "#e74c3c");
+      }
+  
+      if (parseFloat(novoKM) <= kmAnterior) {
+       return mostrarMensagem(`Erro: O KM atual (${novoKM}) não pode ser menor ou igual ao anterior (${kmAnterior})!`, "#e74c3c");
+      }
+
+      // 2. Pergunta o local de devolução
+      const local = prompt("Onde o veículo foi devolvido? (Digite: GHPC, G-Motion ou KPT)").toUpperCase();
+      const locaisValidos = ["GHPC", "G-MOTION", "KPT"];
+
+      if (!locaisValidos.includes(local)) {
+        return mostrarMensagem("Local inválido! Use apenas: GHPC, G-Motion ou KPT", "#e74c3c");
+      }
+
+      try {
+        // Atualiza o carro
+        await updateDoc(ref, { 
+          status: "disponivel", 
+          usuario: "", 
+          ultimoKM: novoKM,
+          localDevolucao: local,
+          updatedAt: new Date() 
+        });
+
+        // Registra no histórico detalhado
+        await addDoc(collection(db, "historico"), { 
+          carroId: id, 
+          carroNome: carro.nome, 
+          usuario: usuarioLogado, 
+          acao: "devolveu", 
+          km: novoKM,
+          local: local,
+          data: new Date() 
+        });
+
+      mostrarMensagem(`Sucesso! Carro em ${local} com ${novoKM} KM.`);
+    } catch (err) {
+      mostrarMensagem("Erro ao devolver: " + err.message, "#e74c3c");
+    }
+  };
     window.login = async () => {
       const e = document.getElementById("email").value;
       const s = document.getElementById("senha").value;
