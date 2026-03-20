@@ -111,6 +111,17 @@
   <meta name="theme-color" content="#2c3e50">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado!'))
+          .catch(err => console.log('Erro ao registrar SW', err));
+      });
+    }
+  </script>
 </head>
 <body>
 
@@ -293,13 +304,27 @@
     }
 
     window.reservarSlot = async (idSlot) => {
-      const ref = doc(db, "carros", carroIdAtual);
-      const snap = await getDoc(ref);
-      const agenda = snap.data().agendaGrade || {};
-      agenda[idSlot] = { nome: nomeUsuarioLogado || usuarioLogado, email: usuarioLogado, data: new Date() };
-      await updateDoc(ref, { agendaGrade: agenda });
-      desenharGrade(agenda);
-      mostrarMensagem("Reservado!");
+      try {
+        const user = auth.currentUser; // Pega o usuário logado no momento exato
+        const nomeParaGravar = user.displayName || user.email;
+
+        const ref = doc(db, "carros", carroIdAtual);
+        const snap = await getDoc(ref);
+        const agenda = snap.data().agendaGrade || {};
+
+        agenda[idSlot] = { 
+          nome: nomeParaGravar, 
+          email: user.email, 
+          data: new Date() 
+        };
+
+        await updateDoc(ref, { agendaGrade: agenda });
+        desenharGrade(agenda);
+        mostrarMensagem("Reservado para " + nomeParaGravar);
+      } catch (err) { 
+        console.error(err);
+        mostrarMensagem("Erro ao reservar", "#e74c3c");
+      }
     };
 
     window.cancelarSlot = async (idSlot) => {
@@ -327,6 +352,7 @@
     };
 
     window.devolverCarro = async (id) => {
+      const user = auth.currentUser; // Garante o acesso ao perfil atual
       const ref = doc(db, "carros", id);
       const snap = await getDoc(ref);
       const carro = snap.data();
@@ -341,7 +367,7 @@
       if (!["GHPC", "G-MOTION", "KPT"].includes(local)) return mostrarMensagem("Local inválido!", "#e74c3c");
 
       try {
-        // 1. Limpa os dados do carro
+        // 1. Limpa os dados do carro no card
         await updateDoc(ref, { 
           status: "disponivel", 
           usuario: "", 
@@ -351,12 +377,12 @@
           updatedAt: new Date() 
         });
 
-        // 2. Grava no histórico (CORREÇÃO AQUI: Prioriza o nomeUsuarioLogado)
+        // 2. Grava no histórico usando o nome do perfil
         await addDoc(collection(db, "historico"), { 
           carroId: id, 
           carroNome: carro.nome, 
-          usuario: usuarioLogado, // E-mail para controle interno
-          usuarioNome: nomeUsuarioLogado || usuarioLogado, // Nome para exibição visual
+          usuario: user.email,
+          usuarioNome: user.displayName || user.email, // <--- FORÇA O NOME AQUI
           acao: "devolveu", 
           km: novoKM, 
           local: local, 
