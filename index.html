@@ -481,7 +481,7 @@
         document.getElementById("userInfo").innerText = "👤 " + (user.displayName || user.email);
         document.getElementById("adminDiv").style.display = emailsAdmins.includes(user.email) ? "block" : "none";
         onSnapshot(collection(db, "carros"), (snap) => renderizar(snap));
-        const qH = query(collection(db, "historico"), orderBy("data", "desc"), limit(20));
+        const qH = query(collection(db, "historico"), orderBy("data", "desc"), limit(10));
         onSnapshot(qH, (snap) => {
           const tab = document.getElementById("tabelaHistorico"); tab.innerHTML = "";
           snap.forEach(d => {
