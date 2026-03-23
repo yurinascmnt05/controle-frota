@@ -112,16 +112,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registrado!'))
-          .catch(err => console.log('Erro ao registrar SW', err));
-      });
-    }
-  </script>
 </head>
 <body>
 
@@ -191,6 +181,15 @@
   </div>
 
   <script type="module">
+    // 1. Registro imediato do Service Worker (Essencial para o botão "Instalar")
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log("PWA: Service Worker Ativo", reg.scope))
+      .catch(err => console.log("PWA: Erro no registro", err));
+      });
+    }
+    
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, addDoc, query, where, getDocs, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -340,57 +339,95 @@
 
     // --- FUNÇÕES DE CARRO ---
     window.pegarCarro = async (id) => {
-      const user = auth.currentUser;
-      const q = query(collection(db, "carros"), where("usuario", "==", user.email));
-      const qSnap = await getDocs(q);
-      if (!qSnap.empty) return mostrarMensagem("Você já tem um veículo!", "#e74c3c");
-      const ref = doc(db, "carros", id);
-      const snap = await getDoc(ref);
-      await updateDoc(ref, { status: "em_uso", usuario: user.email, usuarioNome: user.displayName || user.email, updatedAt: new Date() });
-      await addDoc(collection(db, "historico"), { carroId: id, carroNome: snap.data().nome, usuario: user.email, usuarioNome: user.displayName || user.email, acao: "pegou", data: new Date() });
-      mostrarMensagem("Veículo retirado!");
+      try {
+        const user = auth.currentUser;
+        const nomeParaGravar = user.displayName || user.email;
+
+        // 1. Trava de segurança: Verifica se o motorista já está com algum carro
+        const q = query(collection(db, "carros"), where("usuario", "==", user.email));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) return mostrarMensagem("Você já tem um veículo em uso!", "#e74c3c");
+
+        const ref = doc(db, "carros", id);
+        const snap = await getDoc(ref);
+        const dadosCarro = snap.data();
+        const kmSaida = dadosCarro.ultimoKM || "0";
+
+        // 2. Atualiza o status do carro
+        await updateDoc(ref, { 
+          status: "em_uso", 
+          usuario: user.email, 
+          usuarioNome: nomeParaGravar, 
+          updatedAt: new Date() 
+        });
+
+        // 3. Registra no histórico com o KM de Saída
+        await addDoc(collection(db, "historico"), { 
+          carroId: id, 
+          carroNome: dadosCarro.nome, 
+          usuario: user.email,
+          usuarioNome: nomeParaGravar,
+          acao: "pegou", 
+          kmSaida: kmSaida,
+          data: new Date() 
+        });
+
+        mostrarMensagem(`Retirado! Saída: KM ${kmSaida}`);
+      } catch (err) { 
+        console.error(err);
+        mostrarMensagem("Erro ao retirar veículo", "#e74c3c"); 
+      }
     };
 
     window.devolverCarro = async (id) => {
-      const user = auth.currentUser; // Garante o acesso ao perfil atual
+      const user = auth.currentUser;
       const ref = doc(db, "carros", id);
       const snap = await getDoc(ref);
       const carro = snap.data();
+      
       const kmAnterior = parseFloat(carro.ultimoKM) || 0;
-
-      const novoKM = prompt(`KM anterior: ${kmAnterior}. Digite o KM atual:`);
+      const novoKM = prompt(`KM de Saída: ${kmAnterior}. Digite o KM atual de Chegada:`);
+      
       if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
-        return mostrarMensagem("KM inválido ou menor que o anterior!", "#e74c3c", 4000);
+        return mostrarMensagem("Erro: KM atual deve ser maior que o anterior!", "#e74c3c", 4000);
       }
 
-      const local = prompt("Local (GHPC, G-MOTION ou KPT):").toUpperCase();
-      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) return mostrarMensagem("Local inválido!", "#e74c3c");
+      const local = prompt("Local (GHPC, G-MOTION ou KPT):")?.toUpperCase();
+      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) {
+        return mostrarMensagem("Local inválido!", "#e74c3c");
+      }
 
       try {
-        // 1. Limpa os dados do carro no card
+        const kmChegada = parseFloat(novoKM);
+        const totalViagem = kmChegada - kmAnterior;
+
+        // 1. Libera o carro para o próximo
         await updateDoc(ref, { 
           status: "disponivel", 
           usuario: "", 
           usuarioNome: "", 
-          ultimoKM: novoKM, 
+          ultimoKM: kmChegada, 
           localDevolucao: local, 
           updatedAt: new Date() 
         });
 
-        // 2. Grava no histórico usando o nome do perfil
+        // 2. Grava o histórico detalhado
         await addDoc(collection(db, "historico"), { 
           carroId: id, 
           carroNome: carro.nome, 
           usuario: user.email,
-          usuarioNome: user.displayName || user.email, // <--- FORÇA O NOME AQUI
+          usuarioNome: user.displayName || user.email,
           acao: "devolveu", 
-          km: novoKM, 
+          kmSaida: kmAnterior,
+          kmChegada: kmChegada,
+          totalRodado: totalViagem,
           local: local, 
           data: new Date() 
         });
 
-        mostrarMensagem("Devolvido com sucesso!");
+        mostrarMensagem(`Sucesso! Você rodou ${totalViagem}km.`);
       } catch (err) { 
+        console.error(err);
         mostrarMensagem("Erro ao devolver", "#e74c3c"); 
       }
     };
@@ -449,7 +486,15 @@
           const tab = document.getElementById("tabelaHistorico"); tab.innerHTML = "";
           snap.forEach(d => {
             const log = d.data();
-            tab.innerHTML += `<div style="text-align:left; font-size:0.7rem; border-bottom:1px solid #eee; padding:5px;"><b>${log.acao.toUpperCase()}</b>: ${log.carroNome} por ${log.usuarioNome || log.usuario}</div>`;
+            const detalhesKM = log.acao === "devolveu"
+            ? `<br><small>🛣️ Rodou: ${log.totalRodado}km (De ${log.kmSaida} até ${log.kmChegada})</small>`
+            : `<br><small>🛫 Saiu com: ${log.kmSaida}km</small>`;
+            tab.innerHTML += `
+              <div style="text-align:left; font-size:0.75rem; border-bottom:1px solid #eee; padding:8px;">
+                <b>${log.acao.toUpperCase()}</b>: ${log.carroNome} por ${log.usuarioNome || log.usuario}
+                ${detalhesKM}
+                <div style="font-size:0.65rem; color:#999;">${log.data?.toDate().toLocaleString('pt-BR')}</div>
+              </div>`;
           });
         });
       } else {
