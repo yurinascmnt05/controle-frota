@@ -105,6 +105,11 @@
     h2{
       color: rgb(0, 0, 124);
     }
+
+    .status-agendado { 
+      background: #f1c40f; 
+      color: #000 !important; 
+    }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -220,17 +225,48 @@
       setTimeout(()=> msg.style.display="none", tempo);
     };
 
-    // --- FUNÇÃO RENDERIZAR CARROS ---
+     const verificarSeEstaAgendadoAgora = (agenda) => {
+        if (!agenda) return false;
+
+        const agora = new Date();
+        const diaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"][agora.getDay()];
+        
+        // Formata a hora para o padrão do seu sistema (ex: "09:00")
+        const horaFormatada = agora.getHours().toString().padStart(2, '0') + ":00";
+        
+        const idSlotAtual = `${diaSemana}-${horaFormatada}`;
+        
+        // Retorna true se houver alguém ocupando esse slot
+        return !!agenda[idSlotAtual];
+      };
+
     function renderizar(snapshot) {
       const lista = document.getElementById("lista");
-      lista.innerHTML = "";
+      lista.innerHTML = ""; // Limpa a lista antes de reconstruir
+
       snapshot.forEach((docSnap) => {
         const carro = docSnap.data();
         const isAdmin = usuarioLogado && emailsAdmins.includes(usuarioLogado);
-        const statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
         
+        // Verifica agendamento para o horário atual
+        const estaAgendadoAgora = verificarSeEstaAgendadoAgora(carro.agendaGrade);
+        
+        // Definição de Status e Cores
+        let statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
+        let estiloCard = "";
+        let textoStatus = carro.status === "disponivel" ? "Disponível" : "Em uso";
+
+        // Regra do Amarelo: Se disponível, mas com reserva agora
+        if (carro.status === "disponivel" && estaAgendadoAgora) {
+          statusClass = "status-agendado";
+          estiloCard = "border: 2px solid #f1c40f; background: #fffdf0;";
+          textoStatus = "Reservado Agora";
+        }
+
+        // Lógica do Botão de Ação
         let acaoBotao = "";
         if (carro.status === "disponivel" && usuarioLogado) {
+          // Mesmo agendado, o botão "Pegar" aparece, mas o card fica amarelo para avisar
           acaoBotao = `<button style="background:#27ae60;color:white;" onclick="pegarCarro('${docSnap.id}')">Pegar</button>`;
         } else if (carro.status === "em_uso") {
           if (carro.usuario === usuarioLogado || isAdmin) {
@@ -241,26 +277,33 @@
           }
         }
 
+        // Template HTML Único
         lista.innerHTML += `
-          <div class="carro-card">
+          <div class="carro-card" style="${estiloCard}">
             <b>${carro.nome}</b>
-            <span class="carro-status ${statusClass}">${carro.status === "disponivel" ? "Disponível" : "Em uso"}</span>
+            <span class="carro-status ${statusClass}">${textoStatus}</span>
+            
             <div style="font-size: 0.8rem; margin: 10px 0; color: #555;">
               📍 KM: ${carro.ultimoKM || "---"} | 🏢 Local: ${carro.localDevolucao || "---"}<br>
               📝 Obs: ${carro.observacao || "Nenhuma"}
             </div>
+
             <div style="display:flex; gap:5px;">
               <button style="background:#95a5a6; color:white; font-size:0.7rem;" onclick="editarObs('${docSnap.id}')">Obs</button>
               <button style="background:#34495e; color:white; font-size:0.7rem;" onclick="abrirAgenda('${docSnap.id}', '${carro.nome}')">📅 Agenda Semanal</button>
             </div>
+
             ${acaoBotao}
+
             ${carro.usuario ? `<small style="color:#888;">👤 Com: ${carro.usuarioNome || carro.usuario}</small>` : ""}
-            ${isAdmin ? `<button style="background:#c0392b; color:white; font-size:0.7rem;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir</button>` : ""}
-            ${isAdmin ? `<button style="background:#8e44ad; color:white; font-size:0.7rem;" onclick="resetarAgendaCarro('${docSnap.id}', '${carro.nome}')">Resetar Agenda</button>` : ""}
+            
+            <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+              ${isAdmin ? `<button style="background:#c0392b; color:white; font-size:0.6rem; width: auto;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir</button>` : ""}
+              ${isAdmin ? `<button style="background:#8e44ad; color:white; font-size:0.6rem; width: auto;" onclick="resetarAgendaCarro('${docSnap.id}', '${carro.nome}')">Resetar Agenda</button>` : ""}
+            </div>
           </div>`;
       });
     }
-
     // --- LOGICA DA AGENDA ---
     window.fecharModal = () => document.getElementById("modalAgenda").style.display = "none";
 
@@ -351,6 +394,24 @@
         const ref = doc(db, "carros", id);
         const snap = await getDoc(ref);
         const dadosCarro = snap.data();
+
+        // --- NOVA LÓGICA DE VALIDAÇÃO DE AGENDA ---
+        const agora = new Date();
+        const diaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"][agora.getDay()];
+        const horaFormatada = agora.getHours().toString().padStart(2, '0') + ":00";
+        const idSlotAtual = `${diaSemana}-${horaFormatada}`;
+
+        const reservaAtual = dadosCarro.agendaGrade ? dadosCarro.agendaGrade[idSlotAtual] : null;
+
+        // Se houver reserva e NÃO for do usuário logado (validação por e-mail)
+        if (reservaAtual && reservaAtual.email !== user.email) {
+          const confirmarFuro = confirm(
+            `⚠️ ATENÇÃO!\n\nEste veículo está reservado para: ${reservaAtual.nome}.\n\nDeseja ignorar a reserva e retirar o carro mesmo assim?`
+          );
+          if (!confirmarFuro) return; // Cancela a operação se o usuário desistir
+        }
+        // ------------------------------------------
+
         const kmSaida = dadosCarro.ultimoKM || "0";
 
         // 2. Atualiza o status do carro
