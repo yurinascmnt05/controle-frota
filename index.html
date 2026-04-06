@@ -441,57 +441,62 @@
     };
 
     window.devolverCarro = async (id) => {
-      const user = auth.currentUser;
-      const ref = doc(db, "carros", id);
-      const snap = await getDoc(ref);
-      const carro = snap.data();
-      
-      const kmAnterior = parseFloat(carro.ultimoKM) || 0;
-      const novoKM = prompt(`KM de Saída: ${kmAnterior}. Digite o KM atual de Chegada:`);
-      
-      if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
-        return mostrarMensagem("Erro: KM atual deve ser maior que o anterior!", "#e74c3c", 4000);
-      }
+  const user = auth.currentUser;
+  const ref = doc(db, "carros", id);
+  const snap = await getDoc(ref);
+  const carro = snap.data();
+  
+  const kmAnterior = parseFloat(carro.ultimoKM) || 0;
+  
+  // 1. Pede o KM (ainda via prompt por ser um valor livre)
+  const novoKM = prompt(`KM de Saída: ${kmAnterior}. Digite o KM atual de Chegada:`);
+  
+  if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
+    return mostrarMensagem("Erro: KM atual deve ser maior que o anterior!", "#e74c3c", 4000);
+  }
 
-      const local = prompt("Local (GHPC, G-MOTION ou KPT):")?.toUpperCase();
-      if (!["GHPC", "G-MOTION", "KPT"].includes(local)) {
-        return mostrarMensagem("Local inválido!", "#e74c3c");
-      }
+  // 2. Em vez de prompt para o local, vamos usar uma lógica de seleção simples
+  // Para manter seu código sem criar um novo modal agora, podemos usar um truque de numeração:
+  const opcaoLocal = prompt("Onde o carro foi deixado?\n1 - GHPC\n2 - G-MOTION\n3 - KPT");
+  
+  let local = "";
+  if (opcaoLocal === "1") local = "GHPC";
+  else if (opcaoLocal === "2") local = "G-MOTION";
+  else if (opcaoLocal === "3") local = "KPT";
+  else return mostrarMensagem("Seleção de local inválida!", "#e74c3c");
 
-      try {
-        const kmChegada = parseFloat(novoKM);
-        const totalViagem = kmChegada - kmAnterior;
+  try {
+    const kmChegada = parseFloat(novoKM);
+    const totalViagem = kmChegada - kmAnterior;
 
-        // 1. Libera o carro para o próximo
-        await updateDoc(ref, { 
-          status: "disponivel", 
-          usuario: "", 
-          usuarioNome: "", 
-          ultimoKM: kmChegada, 
-          localDevolucao: local, 
-          updatedAt: new Date() 
-        });
+    await updateDoc(ref, { 
+      status: "disponivel", 
+      usuario: "", 
+      usuarioNome: "", 
+      ultimoKM: kmChegada, 
+      localDevolucao: local, 
+      updatedAt: new Date() 
+    });
 
-        // 2. Grava o histórico detalhado
-        await addDoc(collection(db, "historico"), { 
-          carroId: id, 
-          carroNome: carro.nome, 
-          usuario: user.email,
-          usuarioNome: user.displayName || user.email,
-          acao: "devolveu", 
-          kmSaida: kmAnterior,
-          kmChegada: kmChegada,
-          totalRodado: totalViagem,
-          local: local, 
-          data: new Date() 
-        });
+    await addDoc(collection(db, "historico"), { 
+      carroId: id, 
+      carroNome: carro.nome, 
+      usuario: user.email,
+      usuarioNome: user.displayName || user.email,
+      acao: "devolveu", 
+      kmSaida: kmAnterior,
+      kmChegada: kmChegada,
+      totalRodado: totalViagem,
+      local: local, 
+      data: new Date() 
+    });
 
-        mostrarMensagem(`Sucesso! Você rodou ${totalViagem}km.`);
-      } catch (err) { 
-        console.error(err);
-        mostrarMensagem("Erro ao devolver", "#e74c3c"); 
-      }
-    };
+    mostrarMensagem(`Sucesso! Você rodou ${totalViagem}km.`);
+  } catch (err) { 
+    console.error(err);
+    mostrarMensagem("Erro ao devolver", "#e74c3c"); 
+  }
+};
 
     // --- AUTH E BOILERPLATE ---
     window.login = async () => {
