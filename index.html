@@ -1,145 +1,421 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
   <title>Controle de Frota</title>
-  <style>
-    /* Estilos base mantidos */
-    * { margin:0; padding:0; box-sizing:border-box; font-family: Arial, sans-serif;}
-    body { background:#f0f2f5; color:#333; text-align:center; padding:20px;}
-    h2 { color:#2c3e50; margin-bottom:30px; font-size:2rem; }
-    #container { max-width:500px; margin:auto; background:white; padding:25px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-    input { width:100%; padding:12px 15px; margin:10px 0; border:1px solid #ccc; border-radius:10px; font-size:1rem; transition:.3s; }
-    button { padding:10px 20px; margin:5px; font-size:1rem; border:none; border-radius:10px; cursor:pointer; transition:.3s; }
-    .btn-login { background:#3498db; color:white; }
-    .btn-register { background:#2ecc71; color:white; }
-    .btn-logout { background: #e67e22; color: white; padding: 8px 15px; font-size: 0.8rem; border-radius: 8px; }
-    #userDiv { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; }
-    .carro-card { border:1px solid #ddd; margin:10px 0; padding:20px; border-radius:15px; box-shadow:0 3px 10px rgba(0,0,0,0.08); text-align:left; position:relative; }
-    .carro-card b { font-size: 1.2rem; color: #2c3e50; display: block; margin-bottom: 10px; }
-    .carro-status { font-weight:bold; padding:5px 10px; border-radius:5px; color:white; }
-    .status-disponivel { background: #27ae60; }
-    .status-emuso { background: #e74c3c; }
-    .carro-card button { margin-top:10px; width:100%; font-weight:bold; border-radius:8px; padding:8px; }
-    #mensagem { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ecc71; color:white; padding:10px 20px; border-radius:10px; display:none; z-index:3000;}
-    .password-container { position: relative; width: 100%; }
-    .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d; }
-
-    /* --- CSS DA AGENDA ESTILO TEAMS --- */
-    #modalAgenda { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto; }
-    .modal-content { background: white; margin: 5% auto; padding: 20px; border-radius: 15px; width: 95%; max-width: 600px; position: relative; }
-    .close-modal { position: absolute; right: 20px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; }
-    
-    .grade-semanal { display: grid; grid-template-columns: 50px repeat(5, 1fr); gap: 5px; margin-top: 20px; font-size: 0.7rem; overflow-x: auto; }
-    .col-hora { background: #f8f9fa; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 5px; border: 1px solid #eee;}
-    .dia-cabecalho { font-weight: bold; text-align: center; padding: 10px 0; background: #34495e; color: white; border-radius: 5px; }
-    
-    .slot-agenda { height: 50px; border: 1px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; text-align: center;}
-    .slot-disponivel:hover { background: #e1f5fe; border-color: #3498db; }
-    .slot-ocupado { background: #ffebee; border-color: #ffcdd2; color: #c62828; cursor: not-allowed; }
-    .slot-meu { background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32; }
-    .slot-ocupado small { font-size: 0.55rem; font-weight: bold; }
-    .btn-cancela-slot { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; border: none; font-size: 0.6rem; padding: 2px 5px; border-radius: 0 0 0 5px; cursor: pointer; }
-    /* Ajuste de toque para botões */
-    button, .slot-agenda, .close-modal {
-        min-height: 44px; /* Tamanho mínimo recomendado pela Apple/Google */
-        touch-action: manipulation;
-    }
-
-    #container {
-        width: 95%;
-        max-width: 500px;
-        padding: 15px;
-        margin: 10px auto;
-    }
-
-    /* Agenda Semanal no Mobile */
-    .grade-semanal {
-        display: grid;
-        grid-template-columns: 45px repeat(5, 1fr); /* Diminuído para caber */
-        gap: 3px;
-        overflow-x: auto; /* Permite scroll lateral se a tela for muito pequena */
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .slot-agenda {
-        height: 60px; /* Aumentado para facilitar o clique */
-        font-size: 0.6rem;
-    }
-
-    /* Esconder scrollbar da grade para ficar mais limpo */
-    .grade-semanal::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Card do Carro mais compacto */
-    .carro-card {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-
-    .carro-card button {
-        font-size: 1.1rem; /* Botão principal maior */
-        padding: 12px;
-    }
-
-    button:active, .slot-agenda:active {
-      transform: scale(0.98);
-      opacity: 0.8;
-    }
-
-    /* Estilo para a Logo */
-    .app-logo {
-        /* Dimensões ideais */
-        width: 100%;       /* Ocupa a largura do container em telas pequenas */
-        max-width: 200px;  /* Largura máxima no PC (evita que fique gigante) */
-        height: auto;      /* Mantém a proporção da imagem (não achata) */
-        
-        /* Centralização e Espaçamento */
-        display: block;    /* Garante que margens funcionem */
-        margin: 0 auto 20px auto; /* Centraliza horizontalmente e dá espaço abaixo */
-        
-        /* Mobile-friendly */
-        -webkit-user-drag: none; /* Impede que o usuário "arraste" a imagem no celular */
-    }
-
-    h2{
-      color: rgb(0, 0, 124);
-    }
-
-    .status-agendado { 
-      background: #f1c40f; 
-      color: #000 !important; 
-    }
-  </style>
+  
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#2c3e50">
+  <meta name="theme-color" content="#0056b3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* CSS Refatorado */
+    :root {
+      --primary-color: #0056b3;
+      --secondary-color: #6c757d;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+      --text-muted: #6c757d;
+      --border-radius: 8px;
+    }
+
+    * { 
+        margin:0; 
+        padding:0; 
+        box-sizing:border-box; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body { 
+      background: var(--bg-color); 
+      color: var(--text-main); 
+      text-align:center; 
+      padding: 20px 10px;
+    }
+
+    h2 { 
+      color: var(--primary-color); 
+      margin-bottom:20px; 
+      font-size:1.8rem;
+      font-weight: 600;
+    }
+
+    #container { 
+      width: 100%;
+      max-width:550px; 
+      margin:auto; 
+      background: var(--card-bg); 
+      padding:25px; 
+      border-radius: var(--border-radius); 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+    }
+
+    input, select { 
+      width:100%;
+      padding:12px 15px; 
+      margin:10px 0; 
+      border: 1px solid #ced4da; 
+      border-radius: var(--border-radius); 
+      font-size:1rem; 
+      transition: border-color 0.3s; 
+      background-color: #fff;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    button { 
+      padding:12px 20px; 
+      margin:5px 0; 
+      font-size:1rem; 
+      border:none; 
+      border-radius: var(--border-radius); 
+      cursor:pointer; 
+      transition: background-color 0.2s, transform 0.1s; 
+      font-weight: 500;
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary { background: var(--primary-color); color: white; }
+    .btn-primary:hover { background: #004494; }
+    
+    .btn-success { background: var(--success-color); color: white; }
+    .btn-success:hover { background: #218838; }
+
+    .btn-danger { background: var(--danger-color); color: white; }
+    .btn-danger:hover { background: #c82333; }
+
+    .btn-secondary { background: var(--secondary-color); color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+
+    .btn-warning { background: var(--warning-color); color: #212529; }
+    .btn-warning:hover { background: #e0a800; }
+
+    .btn-outline { background: transparent; border: 1px solid #ced4da; color: var(--text-main); }
+    .btn-outline:hover { background: #e2e6ea; }
+
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      width: auto;
+    }
+
+    #userDiv { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      padding: 15px; 
+      background: #f8f9fa; 
+      border-radius: var(--border-radius); 
+      border: 1px solid #eaeaea;
+    }
+
+    .carro-card { 
+      border: 1px solid #eaeaea; 
+      margin: 15px 0; 
+      padding: 20px; 
+      border-radius: var(--border-radius); 
+      background: var(--card-bg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+      text-align:left; 
+      position:relative; 
+      transition: box-shadow 0.3s;
+    }
+
+    .carro-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    }
+
+    .carro-card b { 
+      font-size: 1.3rem; 
+      color: var(--primary-color); 
+      display: block; 
+      margin-bottom: 15px; 
+      font-weight: 600;
+    }
+
+    .carro-status { 
+      font-weight:600; 
+      padding: 6px 12px; 
+      border-radius: 20px; 
+      color: white; 
+      font-size: 0.85rem;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .status-disponivel { background: var(--success-color); }
+    .status-emuso { background: var(--danger-color); }
+    .status-agendado { background: var(--warning-color); color: #212529; }
+
+    .carro-info {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+    
+    .carro-info i {
+      width: 20px;
+      text-align: center;
+      margin-right: 5px;
+      color: var(--secondary-color);
+    }
+
+    .carro-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    #mensagem { 
+      position:fixed; 
+      top: 20px; 
+      left:50%; 
+      transform:translateX(-50%); 
+      background: var(--success-color); 
+      color:white; 
+      padding:12px 25px; 
+      border-radius: var(--border-radius); 
+      display:none; 
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-weight: 500;
+    }
+
+    .password-container { 
+      position: relative; 
+      width: 100%; 
+    }
+    
+    .toggle-password { 
+      position: absolute; 
+      right: 15px; 
+      top: 50%; 
+      transform: translateY(-50%); 
+      cursor: pointer; 
+      color: var(--text-muted); 
+    }
+
+    /* Modais */
+    .modal-overlay { 
+      display: none; 
+      position: fixed; 
+      z-index: 2000; 
+      left: 0; 
+      top: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      backdrop-filter: blur(3px);
+      overflow-y: auto; 
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content { 
+      background: var(--card-bg); 
+      padding: 25px; 
+      border-radius: var(--border-radius); 
+      width: 90%; 
+      max-width: 500px; 
+      position: relative; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin: auto;
+    }
+
+    #modalAgenda .modal-content {
+      max-width: 600px;
+      width: 95%;
+    }
+
+    .close-modal { 
+      position: absolute; 
+      right: 20px; 
+      top: 20px; 
+      font-size: 1.2rem; 
+      cursor: pointer; 
+      color: var(--text-muted); 
+      transition: color 0.2s;
+    }
+
+    .close-modal:hover {
+      color: var(--danger-color);
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .app-logo {
+      width: 100%;
+      max-width: 180px;
+      height: auto; 
+      display: block;
+      margin: 0 auto 30px auto;
+      -webkit-user-drag: none;
+    }
+
+    /* Histórico */
+    .historico-item {
+      text-align: left;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #eaeaea;
+      padding: 12px 0;
+    }
+    .historico-item:last-child {
+      border-bottom: none;
+    }
+    .historico-header {
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+    }
+    .historico-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
+    /* CSS da Grade Semanal Antiga restaurado com estilo corporativo */
+    .grade-semanal { 
+      display: grid; 
+      grid-template-columns: 50px repeat(5, 1fr); 
+      gap: 5px; 
+      margin-top: 20px; 
+      font-size: 0.7rem; 
+      overflow-x: auto; 
+    }
+    .col-hora { 
+      background: #f8f9fa; 
+      font-weight: 600; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      border-radius: 5px; 
+      border: 1px solid #eaeaea;
+      color: var(--text-muted);
+    }
+    .dia-cabecalho { 
+      font-weight: 600; 
+      text-align: center; 
+      padding: 10px 0; 
+      background: var(--primary-color); 
+      color: white; 
+      border-radius: 5px; 
+    }
+    .slot-agenda { 
+      height: 50px; 
+      border: 1px solid #eaeaea; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      border-radius: 4px; 
+      transition: 0.2s; 
+      position: relative; 
+      text-align: center;
+    }
+    .slot-disponivel:hover { 
+      background: #e1f5fe; 
+      border-color: #3498db; 
+    }
+    .slot-ocupado { 
+      background: #ffebee; 
+      border-color: #ffcdd2; 
+      color: #c62828; 
+      cursor: not-allowed; 
+    }
+    .slot-meu { 
+      background: #e8f5e9; 
+      border-color: #c8e6c9; 
+      color: #2e7d32; 
+    }
+    .slot-ocupado small { 
+      font-size: 0.55rem; 
+      font-weight: 600; 
+    }
+    .btn-cancela-slot { 
+      position: absolute; 
+      top: 0; 
+      right: 0; 
+      background: var(--danger-color); 
+      color: white; 
+      border: none; 
+      font-size: 0.6rem;
+      padding: 2px 5px; 
+      border-radius: 0 0 0 5px; 
+      cursor: pointer; 
+      width: auto;
+    }
+
+    @media (max-width: 600px) {
+      .grade-semanal {
+          grid-template-columns: 45px repeat(5, 1fr);
+          gap: 3px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+      }
+      .slot-agenda {
+          height: 60px;
+          font-size: 0.6rem;
+      }
+    }
+  </style>
 </head>
 <body>
-
-  <h2>Controle de Frota</h2>
+  
   <div id="mensagem"></div>
 
   <div id="container">
 
     <img src="logo.png" alt="Logo Empresa" class="app-logo">
+    <h2>Controle de Frota</h2>
 
+    <!-- Autenticação -->
     <div id="authDiv">
-      <div style="display: flex; margin-bottom: 20px;">
-        <button onclick="alternarAuth('login')" id="tabLogin" style="flex:1; background:#3498db; color:white;">Login</button>
-        <button onclick="alternarAuth('registro')" id="tabRegistro" style="flex:1; background:#ecf0f1; color:#333;">Novo Cadastro</button>
+      <div style="display: flex; margin-bottom: 20px; gap: 10px;">
+        <button onclick="alternarAuth('login')" id="tabLogin" class="btn-primary">Entrar</button>
+        <button onclick="alternarAuth('registro')" id="tabRegistro" class="btn-outline">Novo Cadastro</button>
       </div>
+      
       <div id="formLogin">
-        <input type="email" id="emailLogin" placeholder="E-mail">
+        <input type="email" id="emailLogin" placeholder="E-mail Corporativo">
         <div class="password-container">
           <input type="password" id="senhaLogin" placeholder="Senha">
           <i class="fas fa-eye toggle-password" onclick="toggleSenha('senhaLogin')"></i>
         </div>
-        <button class="btn-login" onclick="login()" style="width:100%">Entrar no Sistema</button>
+        <button class="btn-primary" onclick="login()"><i class="fas fa-sign-in-alt"></i> Acessar Sistema</button>
       </div>
+      
       <div id="formRegistro" style="display: none;">
         <input type="text" id="nomeRegistro" placeholder="Seu Nome Completo">
         <input type="email" id="emailRegistro" placeholder="E-mail Corporativo">
@@ -147,46 +423,86 @@
           <input type="password" id="senhaRegistro" placeholder="Senha">
           <i class="fas fa-eye toggle-password" onclick="toggleSenha('senhaRegistro')"></i>
         </div>
-        <button class="btn-register" onclick="registrar()" style="width:100%">Criar Minha Conta</button>
+        <button class="btn-success" onclick="registrar()"><i class="fas fa-user-plus"></i> Criar Conta</button>
       </div>
     </div>
 
+    <!-- Sistema Principal -->
     <div id="conteudoPrivado" style="display: none;">
+      
       <div id="userDiv">
-        <div id="userInfo" style="font-size: 0.8rem; font-weight: bold;"></div>
-        <button class="btn-logout" onclick="logout()">Sair</button>
+        <div id="userInfo" style="font-weight: 500; color: var(--primary-color);"></div>
+        <button class="btn-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
       </div>
-      <div id="adminDiv" style="background: #ecf0f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left; display: none;">
-        <h4 style="margin-bottom: 5px;">➕ Cadastrar Veículo</h4>
-        <div style="display: flex; gap: 5px;">
+      
+      <div id="adminDiv" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: left; display: none; border: 1px solid #e9ecef;">
+        <h4 style="margin-bottom: 10px; color: var(--text-main);"><i class="fas fa-plus-circle"></i> Cadastrar Veículo</h4>
+        <div style="display: flex; gap: 10px;">
           <input type="text" id="novoCarroNome" placeholder="Ex: Strada - ABC1234" style="margin:0;">
-          <button class="btn-register" onclick="cadastrarCarro()" style="margin:0;">Adicionar</button>
+          <button class="btn-success" onclick="cadastrarCarro()" style="margin:0; width: auto;"><i class="fas fa-check"></i></button>
         </div>
       </div>
+      
       <div id="lista"></div>
       
-      <div id="historicoSecao" style="margin-top: 20px;">
-        <button onclick="toggleHistorico()" style="background: #95a5a6; color: white; width: 100%; display: flex; justify-content: space-between;">
-          📜 Histórico <span id="setaHistorico">▼</span>
-        </button>
-        <div id="conteudoHistorico" style="display: none; padding-top:10px;">
-          <div id="tabelaHistorico"></div>
-        </div>
-      </div>
     </div>
   </div>
 
-  <div id="modalAgenda">
+  <!-- Modal Agenda (Grade Semanal) -->
+  <div id="modalAgenda" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-      <span class="close-modal" onclick="fecharModal()">&times;</span>
-      <h3 id="tituloModal">Agenda</h3>
-      <p style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Clique nos slots para reservar ou cancelar seus horários.</p>
+      <i class="fas fa-times close-modal" onclick="fecharModal('modalAgenda')"></i>
+      <h3 id="tituloModalAgenda" class="modal-title">Agenda</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; text-align: left;">Clique nos slots para reservar ou cancelar seus horários.</p>
       <div class="grade-semanal" id="gradeHorarios"></div>
     </div>
   </div>
 
+  <!-- Modal Devolução -->
+  <div id="modalDevolucao" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="text-align: left;">
+      <i class="fas fa-times close-modal" onclick="fecharModal('modalDevolucao')"></i>
+      <h3 class="modal-title">Devolver Veículo</h3>
+      
+      <p id="infoKmAnterior" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;"></p>
+      
+      <label style="font-weight: 500; font-size: 0.9rem;">KM de Chegada:</label>
+      <input type="number" id="inputKmChegada" placeholder="Ex: 45200">
+      
+      <label style="font-weight: 500; font-size: 0.9rem; display: block; margin-top: 10px;">Nível de Combustível:</label>
+      <select id="selectCombustivel">
+        <option value="" disabled selected>Selecione...</option>
+        <option value="Reserva">Reserva</option>
+        <option value="1/4">1/4</option>
+        <option value="1/2">Meio Tanque (1/2)</option>
+        <option value="3/4">3/4</option>
+        <option value="Cheio">Cheio</option>
+      </select>
+      
+      <label style="font-weight: 500; font-size: 0.9rem; display: block; margin-top: 10px;">Local de Devolução:</label>
+      <select id="selectLocalDevolucao">
+        <option value="" disabled selected>Selecione o pátio...</option>
+        <option value="GHPC">GHPC</option>
+        <option value="G-MOTION">G-MOTION</option>
+        <option value="KPT">KPT</option>
+      </select>
+
+      <button class="btn-primary" onclick="confirmarDevolucao()" style="margin-top: 20px;"><i class="fas fa-check-circle"></i> Confirmar Devolução</button>
+    </div>
+  </div>
+
+  <!-- Modal Histórico Individual -->
+  <div id="modalHistorico" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <i class="fas fa-times close-modal" onclick="fecharModal('modalHistorico')"></i>
+      <h3 id="tituloModalHistorico" class="modal-title">Histórico</h3>
+      <div id="conteudoHistorico" style="max-height: 400px; overflow-y: auto;">
+        <!-- Lista injetada via JS -->
+      </div>
+    </div>
+  </div>
+
   <script type="module">
-    // 1. Registro imediato do Service Worker (Essencial para o botão "Instalar")
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
@@ -215,102 +531,115 @@
 
     let usuarioLogado = null;
     let nomeUsuarioLogado = null;
-    let carroIdAtual = null;
+    let carroIdAtual = null; 
+    let carroDevolucaoAtual = null; 
+    let unsubscribeHistorico = null; 
+    
     const DIAS = ["SEG", "TER", "QUA", "QUI", "SEX"];
     const HORAS = ["08:00", "09:00", "10:00", "11:00", "12:00","13:00", "14:00", "15:00", "16:00", "17:00",  "18:00"];
 
-    const mostrarMensagem = (texto, cor="#2ecc71", tempo = 2500) => {
+    const mostrarMensagem = (texto, cor="#28a745", tempo = 3000) => {
       const msg = document.getElementById("mensagem");
       msg.style.background = cor; msg.innerText = texto; msg.style.display = "block";
       setTimeout(()=> msg.style.display="none", tempo);
     };
 
-     const verificarSeEstaAgendadoAgora = (agenda) => {
-        if (!agenda) return false;
-
-        const agora = new Date();
-        const diaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"][agora.getDay()];
-        
-        // Formata a hora para o padrão do seu sistema (ex: "09:00")
-        const horaFormatada = agora.getHours().toString().padStart(2, '0') + ":00";
-        
-        const idSlotAtual = `${diaSemana}-${horaFormatada}`;
-        
-        // Retorna true se houver alguém ocupando esse slot
-        return !!agenda[idSlotAtual];
-      };
+    const verificarSeEstaAgendadoAgora = (agendaGrade) => {
+      if (!agendaGrade) return false;
+      const agora = new Date();
+      const diaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"][agora.getDay()];
+      const horaFormatada = agora.getHours().toString().padStart(2, '0') + ":00";
+      const idSlotAtual = `${diaSemana}-${horaFormatada}`;
+      return !!agendaGrade[idSlotAtual];
+    };
 
     function renderizar(snapshot) {
       const lista = document.getElementById("lista");
-      lista.innerHTML = ""; // Limpa a lista antes de reconstruir
+      lista.innerHTML = ""; 
 
       snapshot.forEach((docSnap) => {
         const carro = docSnap.data();
         const isAdmin = usuarioLogado && emailsAdmins.includes(usuarioLogado);
         
-        // Verifica agendamento para o horário atual
         const estaAgendadoAgora = verificarSeEstaAgendadoAgora(carro.agendaGrade);
         
-        // Definição de Status e Cores
         let statusClass = carro.status === "disponivel" ? "status-disponivel" : "status-emuso";
         let estiloCard = "";
         let textoStatus = carro.status === "disponivel" ? "Disponível" : "Em uso";
 
-        // Regra do Amarelo: Se disponível, mas com reserva agora
         if (carro.status === "disponivel" && estaAgendadoAgora) {
           statusClass = "status-agendado";
-          estiloCard = "border: 2px solid #f1c40f; background: #fffdf0;";
+          estiloCard = "border: 2px solid var(--warning-color);";
           textoStatus = "Reservado Agora";
         }
 
-        // Lógica do Botão de Ação
         let acaoBotao = "";
+        let classBotaoPrincipal = "";
+        
         if (carro.status === "disponivel" && usuarioLogado) {
-          // Mesmo agendado, o botão "Pegar" aparece, mas o card fica amarelo para avisar
-          acaoBotao = `<button style="background:#27ae60;color:white;" onclick="pegarCarro('${docSnap.id}')">Pegar</button>`;
+          acaoBotao = `<button class="btn-success" style="grid-column: span 2;" onclick="pegarCarro('${docSnap.id}')"><i class="fas fa-key"></i> Pegar Veículo</button>`;
         } else if (carro.status === "em_uso") {
           if (carro.usuario === usuarioLogado || isAdmin) {
-            const corB = isAdmin && carro.usuario !== usuarioLogado ? "#e67e22" : "#e74c3c";
-            acaoBotao = `<button style="background:${corB};color:white;" onclick="devolverCarro('${docSnap.id}')">Devolver ${isAdmin && carro.usuario !== usuarioLogado ? '(Admin)' : ''}</button>`;
+            const ehAdminForcando = isAdmin && carro.usuario !== usuarioLogado;
+            const classBtn = ehAdminForcando ? "btn-warning" : "btn-danger";
+            const textoDev = ehAdminForcando ? "Forçar Devolução" : "Devolver Veículo";
+            acaoBotao = `<button class="${classBtn}" style="grid-column: span 2;" onclick="abrirModalDevolucao('${docSnap.id}')"><i class="fas fa-undo"></i> ${textoDev}</button>`;
           } else {
-            acaoBotao = `<button disabled style="background:gray;color:white;">Em uso</button>`;
+            acaoBotao = `<button disabled class="btn-secondary" style="grid-column: span 2; opacity: 0.6; cursor: not-allowed;"><i class="fas fa-ban"></i> Em uso por ${carro.usuarioNome}</button>`;
           }
         }
 
-        // Template HTML Único
         lista.innerHTML += `
           <div class="carro-card" style="${estiloCard}">
             <b>${carro.nome}</b>
             <span class="carro-status ${statusClass}">${textoStatus}</span>
             
-            <div style="font-size: 0.8rem; margin: 10px 0; color: #555;">
-              📍 KM: ${carro.ultimoKM || "---"} | 🏢 Local: ${carro.localDevolucao || "---"}<br>
-              📝 Obs: ${carro.observacao || "Nenhuma"}
+            <div class="carro-info">
+              <div><i class="fas fa-tachometer-alt"></i> <strong>KM:</strong> ${carro.ultimoKM || "---"}</div>
+              <div><i class="fas fa-gas-pump"></i> <strong>Combustível:</strong> ${carro.ultimoCombustivel || "---"}</div>
+              <div><i class="fas fa-map-marker-alt"></i> <strong>Local:</strong> ${carro.localDevolucao || "---"}</div>
+              <div><i class="fas fa-sticky-note"></i> <strong>Obs:</strong> ${carro.observacao || "Nenhuma"}</div>
             </div>
 
-            <div style="display:flex; gap:5px;">
-              <button style="background:#95a5a6; color:white; font-size:0.7rem;" onclick="editarObs('${docSnap.id}')">Obs</button>
-              <button style="background:#34495e; color:white; font-size:0.7rem;" onclick="abrirAgenda('${docSnap.id}', '${carro.nome}')">📅 Agenda Semanal</button>
+            <div class="carro-actions">
+              <button class="btn-outline btn-sm" onclick="editarObs('${docSnap.id}')"><i class="fas fa-edit"></i> Editar Obs</button>
+              <button class="btn-primary btn-sm" onclick="abrirAgenda('${docSnap.id}', '${carro.nome}')"><i class="fas fa-calendar-alt"></i> Agenda</button>
+              <button class="btn-secondary btn-sm" style="grid-column: span 2;" onclick="abrirHistorico('${docSnap.id}', '${carro.nome}')"><i class="fas fa-history"></i> Ver Histórico</button>
             </div>
 
-            ${acaoBotao}
+            <div style="display: grid; grid-template-columns: 1fr;">
+               ${acaoBotao}
+            </div>
 
-            ${carro.usuario ? `<small style="color:#888;">👤 Com: ${carro.usuarioNome || carro.usuario}</small>` : ""}
+            ${carro.usuario ? `<div style="margin-top: 15px; font-size: 0.85rem; color: var(--primary-color); font-weight: 500;"><i class="fas fa-user-circle"></i> Em posse de: ${carro.usuarioNome || carro.usuario}</div>` : ""}
             
-            <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
-              ${isAdmin ? `<button style="background:#c0392b; color:white; font-size:0.6rem; width: auto;" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')">Excluir</button>` : ""}
-              ${isAdmin ? `<button style="background:#8e44ad; color:white; font-size:0.6rem; width: auto;" onclick="resetarAgendaCarro('${docSnap.id}', '${carro.nome}')">Resetar Agenda</button>` : ""}
-            </div>
+            ${isAdmin ? `
+            <div style="margin-top: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+              <button class="btn-outline btn-sm" style="color: var(--danger-color); border-color: var(--danger-color);" onclick="excluirCarro('${docSnap.id}', '${carro.nome}')"><i class="fas fa-trash"></i> Excluir</button>
+              <button class="btn-outline btn-sm" onclick="resetarAgendaCarro('${docSnap.id}', '${carro.nome}')"><i class="fas fa-calendar-times"></i> Limpar Agenda</button>
+            </div>` : ""}
           </div>`;
       });
     }
-    // --- LOGICA DA AGENDA ---
-    window.fecharModal = () => document.getElementById("modalAgenda").style.display = "none";
 
+    // --- UTILITÁRIOS DE MODAL ---
+    window.fecharModal = (idModal) => {
+      document.getElementById(idModal).style.display = "none";
+      if(idModal === 'modalHistorico' && unsubscribeHistorico) {
+        unsubscribeHistorico(); // Para de ouvir o histórico se fechar
+      }
+    };
+    
+    // Função para abrir display flex nos modais (facilita alinhamento)
+    const abrirModal = (idModal) => {
+      document.getElementById(idModal).style.display = "flex";
+    };
+
+    // --- LOGICA DA AGENDA (GRADE ESTÁTICA) ---
     window.abrirAgenda = async (id, nome) => {
       carroIdAtual = id;
-      document.getElementById("tituloModal").innerText = "Agenda: " + nome;
-      document.getElementById("modalAgenda").style.display = "block";
+      document.getElementById("tituloModalAgenda").innerText = "Agenda: " + nome;
+      abrirModal("modalAgenda");
       const snap = await getDoc(doc(db, "carros", id));
       desenharGrade(snap.data().agendaGrade || {});
     };
@@ -319,6 +648,7 @@
       const grade = document.getElementById("gradeHorarios");
       grade.innerHTML = "<div></div>"; 
       DIAS.forEach(dia => grade.innerHTML += `<div class="dia-cabecalho">${dia}</div>`);
+      
       HORAS.forEach(hora => {
         grade.innerHTML += `<div class="col-hora">${hora}</div>`;
         DIAS.forEach(dia => {
@@ -335,9 +665,9 @@
             cont = `<small>${res.nome.split(' ')[0]}</small>`;
             if (souDono || isAdmin) {
               click = `onclick="cancelarSlot('${idSlot}')"`;
-              cont += `<button class="btn-cancela-slot">X</button>`;
+              cont += `<button class="btn-cancela-slot"><i class="fas fa-times"></i></button>`;
             } else {
-              click = `onclick="mostrarMensagem('Ocupado por ${res.nome}', '#e67e22')"`;
+              click = `onclick="mostrarMensagem('Ocupado por ${res.nome}', 'var(--warning-color)')"`;
             }
           }
           grade.innerHTML += `<div class="slot-agenda ${classe}" ${click}>${cont}</div>`;
@@ -347,7 +677,7 @@
 
     window.reservarSlot = async (idSlot) => {
       try {
-        const user = auth.currentUser; // Pega o usuário logado no momento exato
+        const user = auth.currentUser;
         const nomeParaGravar = user.displayName || user.email;
 
         const ref = doc(db, "carros", carroIdAtual);
@@ -357,7 +687,7 @@
         agenda[idSlot] = { 
           nome: nomeParaGravar, 
           email: user.email, 
-          data: new Date() 
+          data: new Date().toISOString() 
         };
 
         await updateDoc(ref, { agendaGrade: agenda });
@@ -365,37 +695,36 @@
         mostrarMensagem("Reservado para " + nomeParaGravar);
       } catch (err) { 
         console.error(err);
-        mostrarMensagem("Erro ao reservar", "#e74c3c");
+        mostrarMensagem("Erro ao reservar", "var(--danger-color)");
       }
     };
 
     window.cancelarSlot = async (idSlot) => {
-      if(!confirm("Cancelar reserva?")) return;
+      if(!confirm("Deseja realmente cancelar esta reserva?")) return;
       const ref = doc(db, "carros", carroIdAtual);
       const snap = await getDoc(ref);
       const agenda = snap.data().agendaGrade || {};
       delete agenda[idSlot];
       await updateDoc(ref, { agendaGrade: agenda });
       desenharGrade(agenda);
-      mostrarMensagem("Cancelado!");
+      mostrarMensagem("Reserva cancelada com sucesso!");
     };
 
-    // --- FUNÇÕES DE CARRO ---
+    // --- FUNÇÕES DE CARRO (PEGAR E DEVOLVER) ---
     window.pegarCarro = async (id) => {
       try {
         const user = auth.currentUser;
         const nomeParaGravar = user.displayName || user.email;
 
-        // 1. Trava de segurança: Verifica se o motorista já está com algum carro
         const q = query(collection(db, "carros"), where("usuario", "==", user.email));
         const qSnap = await getDocs(q);
-        if (!qSnap.empty) return mostrarMensagem("Você já tem um veículo em uso!", "#e74c3c");
+        if (!qSnap.empty) return mostrarMensagem("Você já tem um veículo em uso!", "var(--danger-color)");
 
         const ref = doc(db, "carros", id);
         const snap = await getDoc(ref);
         const dadosCarro = snap.data();
 
-        // --- NOVA LÓGICA DE VALIDAÇÃO DE AGENDA ---
+        // Validação com o formato da grade antiga
         const agora = new Date();
         const diaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"][agora.getDay()];
         const horaFormatada = agora.getHours().toString().padStart(2, '0') + ":00";
@@ -403,18 +732,15 @@
 
         const reservaAtual = dadosCarro.agendaGrade ? dadosCarro.agendaGrade[idSlotAtual] : null;
 
-        // Se houver reserva e NÃO for do usuário logado (validação por e-mail)
         if (reservaAtual && reservaAtual.email !== user.email) {
           const confirmarFuro = confirm(
             `⚠️ ATENÇÃO!\n\nEste veículo está reservado para: ${reservaAtual.nome}.\n\nDeseja ignorar a reserva e retirar o carro mesmo assim?`
           );
-          if (!confirmarFuro) return; // Cancela a operação se o usuário desistir
+          if (!confirmarFuro) return; 
         }
-        // ------------------------------------------
 
         const kmSaida = dadosCarro.ultimoKM || "0";
 
-        // 2. Atualiza o status do carro
         await updateDoc(ref, { 
           status: "em_uso", 
           usuario: user.email, 
@@ -422,7 +748,6 @@
           updatedAt: new Date() 
         });
 
-        // 3. Registra no histórico com o KM de Saída
         await addDoc(collection(db, "historico"), { 
           carroId: id, 
           carroNome: dadosCarro.nome, 
@@ -436,84 +761,164 @@
         mostrarMensagem(`Retirado! Saída: KM ${kmSaida}`);
       } catch (err) { 
         console.error(err);
-        mostrarMensagem("Erro ao retirar veículo", "#e74c3c"); 
+        mostrarMensagem("Erro ao retirar veículo", "var(--danger-color)"); 
       }
     };
 
-    window.devolverCarro = async (id) => {
-  const user = auth.currentUser;
-  const ref = doc(db, "carros", id);
-  const snap = await getDoc(ref);
-  const carro = snap.data();
-  
-  const kmAnterior = parseFloat(carro.ultimoKM) || 0;
-  
-  // 1. Pede o KM (ainda via prompt por ser um valor livre)
-  const novoKM = prompt(`KM de Saída: ${kmAnterior}. Digite o KM atual de Chegada:`);
-  
-  if (!novoKM || isNaN(novoKM) || parseFloat(novoKM) <= kmAnterior) {
-    return mostrarMensagem("Erro: KM atual deve ser maior que o anterior!", "#e74c3c", 4000);
-  }
+    window.abrirModalDevolucao = async (id) => {
+       carroDevolucaoAtual = id;
+       const snap = await getDoc(doc(db, "carros", id));
+       const kmAnterior = snap.data().ultimoKM || 0;
+       
+       document.getElementById("infoKmAnterior").innerHTML = `<i class="fas fa-info-circle"></i> <strong>Último KM registrado:</strong> ${kmAnterior}`;
+       document.getElementById("inputKmChegada").value = "";
+       document.getElementById("selectCombustivel").value = "";
+       document.getElementById("selectLocalDevolucao").value = "";
+       
+       abrirModal("modalDevolucao");
+    };
 
-  // 2. Em vez de prompt para o local, vamos usar uma lógica de seleção simples
-  // Para manter seu código sem criar um novo modal agora, podemos usar um truque de numeração:
-  const opcaoLocal = prompt("Onde o carro foi deixado?\n1 - GHPC\n2 - G-MOTION\n3 - KPT");
-  
-  let local = "";
-  if (opcaoLocal === "1") local = "GHPC";
-  else if (opcaoLocal === "2") local = "G-MOTION";
-  else if (opcaoLocal === "3") local = "KPT";
-  else return mostrarMensagem("Seleção de local inválida!", "#e74c3c");
+    window.confirmarDevolucao = async () => {
+       if(!carroDevolucaoAtual) return;
+       
+       const user = auth.currentUser;
+       const ref = doc(db, "carros", carroDevolucaoAtual);
+       const snap = await getDoc(ref);
+       const carro = snap.data();
+       const kmAnterior = parseFloat(carro.ultimoKM) || 0;
 
-  try {
-    const kmChegada = parseFloat(novoKM);
-    const totalViagem = kmChegada - kmAnterior;
+       const valKm = document.getElementById("inputKmChegada").value;
+       const combustivel = document.getElementById("selectCombustivel").value;
+       const local = document.getElementById("selectLocalDevolucao").value;
 
-    await updateDoc(ref, { 
-      status: "disponivel", 
-      usuario: "", 
-      usuarioNome: "", 
-      ultimoKM: kmChegada, 
-      localDevolucao: local, 
-      updatedAt: new Date() 
-    });
+       if (!valKm || !combustivel || !local) {
+          return mostrarMensagem("Preencha todos os campos!", "var(--warning-color)");
+       }
 
-    await addDoc(collection(db, "historico"), { 
-      carroId: id, 
-      carroNome: carro.nome, 
-      usuario: user.email,
-      usuarioNome: user.displayName || user.email,
-      acao: "devolveu", 
-      kmSaida: kmAnterior,
-      kmChegada: kmChegada,
-      totalRodado: totalViagem,
-      local: local, 
-      data: new Date() 
-    });
+       const kmChegada = parseFloat(valKm);
+       if (kmChegada <= kmAnterior) {
+          return mostrarMensagem("Erro: KM atual deve ser MAIOR que o anterior!", "var(--danger-color)", 4000);
+       }
 
-    mostrarMensagem(`Sucesso! Você rodou ${totalViagem}km.`);
-  } catch (err) { 
-    console.error(err);
-    mostrarMensagem("Erro ao devolver", "#e74c3c"); 
-  }
-};
+       try {
+          const totalViagem = kmChegada - kmAnterior;
+
+          await updateDoc(ref, { 
+            status: "disponivel", 
+            usuario: "", 
+            usuarioNome: "", 
+            ultimoKM: kmChegada, 
+            localDevolucao: local, 
+            ultimoCombustivel: combustivel,
+            updatedAt: new Date() 
+          });
+
+          await addDoc(collection(db, "historico"), { 
+            carroId: carroDevolucaoAtual, 
+            carroNome: carro.nome, 
+            usuario: user.email,
+            usuarioNome: user.displayName || user.email,
+            acao: "devolveu", 
+            kmSaida: kmAnterior,
+            kmChegada: kmChegada,
+            totalRodado: totalViagem,
+            local: local, 
+            combustivel: combustivel,
+            data: new Date() 
+          });
+
+          mostrarMensagem(`Sucesso! Você rodou ${totalViagem}km.`);
+          fecharModal("modalDevolucao");
+          carroDevolucaoAtual = null;
+       } catch (err) {
+          console.error(err);
+          mostrarMensagem("Erro ao devolver", "var(--danger-color)"); 
+       }
+    };
+
+    // --- HISTÓRICO INDIVIDUAL ---
+    window.abrirHistorico = (carroId, carroNome) => {
+       document.getElementById("tituloModalHistorico").innerText = "Histórico: " + carroNome;
+       const container = document.getElementById("conteudoHistorico");
+       container.innerHTML = "<p style='padding: 10px; color: #666;'><i class='fas fa-spinner fa-spin'></i> Carregando...</p>";
+       
+       abrirModal("modalHistorico");
+
+       const qH = query(
+          collection(db, "historico"), 
+          where("carroId", "==", carroId)
+       );
+
+       unsubscribeHistorico = onSnapshot(qH, (snap) => {
+          container.innerHTML = "";
+          if (snap.empty) {
+             container.innerHTML = "<p style='padding: 10px; color: #666;'>Nenhuma movimentação encontrada para este veículo.</p>";
+             return;
+          }
+
+          let logs = [];
+          snap.forEach(d => logs.push(d.data()));
+          
+          logs.sort((a, b) => {
+             const tA = a.data ? a.data.toDate().getTime() : 0;
+             const tB = b.data ? b.data.toDate().getTime() : 0;
+             return tB - tA;
+          });
+          logs = logs.slice(0, 20);
+
+          logs.forEach(log => {
+             const isDevolucao = log.acao === "devolveu";
+             const iconeAcao = isDevolucao ? "<i class='fas fa-arrow-down' style='color: var(--success-color);'></i>" : "<i class='fas fa-arrow-up' style='color: var(--warning-color);'></i>";
+             const tituloAcao = isDevolucao ? "Devolução" : "Retirada";
+             
+             let detalhesExtras = "";
+             if (isDevolucao) {
+                detalhesExtras = `
+                   <div style="margin-top: 5px; background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 0.8rem;">
+                     <div><i class="fas fa-road"></i> Rodou: <b>${log.totalRodado}km</b> (De ${log.kmSaida} até ${log.kmChegada})</div>
+                     <div><i class="fas fa-gas-pump"></i> Combustível: <b>${log.combustivel || "Não informado"}</b></div>
+                     <div><i class="fas fa-map-marker-alt"></i> Local: <b>${log.local || "Não informado"}</b></div>
+                   </div>
+                `;
+             } else {
+                detalhesExtras = `
+                   <div style="margin-top: 5px; font-size: 0.8rem; color: var(--secondary-color);">
+                     <i class="fas fa-tachometer-alt"></i> Saiu com: <b>${log.kmSaida}km</b>
+                   </div>
+                `;
+             }
+
+             container.innerHTML += `
+                <div class="historico-item">
+                   <div class="historico-header">
+                      <span>${iconeAcao} ${tituloAcao} por ${log.usuarioNome || log.usuario}</span>
+                      <span style="font-size: 0.75rem; font-weight: 400; color: #999;">
+                        ${log.data ? log.data.toDate().toLocaleString('pt-BR') : 'Data desconhecida'}
+                      </span>
+                   </div>
+                   ${detalhesExtras}
+                </div>
+             `;
+          });
+       });
+    };
 
     // --- AUTH E BOILERPLATE ---
     window.login = async () => {
       try { await signInWithEmailAndPassword(auth, document.getElementById("emailLogin").value, document.getElementById("senhaLogin").value); } 
-      catch (e) { mostrarMensagem("Erro no login", "#e74c3c"); }
+      catch (e) { mostrarMensagem("Erro no login. Verifique as credenciais.", "var(--danger-color)"); }
     };
 
     window.registrar = async () => {
       const nome = document.getElementById("nomeRegistro").value;
       const email = document.getElementById("emailRegistro").value;
       const senha = document.getElementById("senhaRegistro").value;
-      if(!nome || !email || !senha) return mostrarMensagem("Preencha tudo", "#e74c3c");
+      if(!nome || !email || !senha) return mostrarMensagem("Preencha todos os campos", "var(--warning-color)");
       try {
         const res = await createUserWithEmailAndPassword(auth, email, senha);
         await updateProfile(res.user, { displayName: nome });
-        mostrarMensagem("Conta criada!");
-      } catch (e) { mostrarMensagem("Erro ao criar conta", "#e74c3c"); }
+        mostrarMensagem("Conta criada com sucesso!");
+      } catch (e) { mostrarMensagem("Erro ao criar conta", "var(--danger-color)"); }
     };
 
     window.logout = () => signOut(auth);
@@ -522,67 +927,77 @@
       const isL = t === 'login';
       document.getElementById("formLogin").style.display = isL ? "block" : "none";
       document.getElementById("formRegistro").style.display = isL ? "none" : "block";
-      document.getElementById("tabLogin").style.background = isL ? "#3498db" : "#ecf0f1";
-      document.getElementById("tabRegistro").style.background = isL ? "#ecf0f1" : "#2ecc71";
+      
+      const tabL = document.getElementById("tabLogin");
+      const tabR = document.getElementById("tabRegistro");
+      
+      if(isL) {
+         tabL.className = "btn-primary";
+         tabR.className = "btn-outline";
+      } else {
+         tabL.className = "btn-outline";
+         tabR.className = "btn-success";
+      }
     };
+
     window.editarObs = async (id) => {
-      const obs = prompt("Observação:");
+      const obs = prompt("Digite a nova observação para o veículo:");
       if(obs !== null) await updateDoc(doc(db, "carros", id), { observacao: obs });
     };
+
     window.cadastrarCarro = async () => {
       const n = document.getElementById("novoCarroNome").value;
-      if(n) { await addDoc(collection(db, "carros"), { nome: n, status: "disponivel", usuario: "", updatedAt: new Date() }); document.getElementById("novoCarroNome").value = ""; }
+      if(n) { 
+         await addDoc(collection(db, "carros"), { 
+            nome: n, 
+            status: "disponivel", 
+            usuario: "", 
+            agendaGrade: {},
+            updatedAt: new Date() 
+         }); 
+         document.getElementById("novoCarroNome").value = ""; 
+         mostrarMensagem("Veículo adicionado!");
+      }
     };
-    window.excluirCarro = async (id, n) => { if(confirm(`Excluir ${n}?`)) await deleteDoc(doc(db, "carros", id)); };
-    window.toggleHistorico = () => {
-      const c = document.getElementById("conteudoHistorico");
-      c.style.display = c.style.display === "block" ? "none" : "block";
+
+    window.excluirCarro = async (id, n) => { 
+       if(confirm(`Tem certeza que deseja excluir o veículo ${n}? Esta ação não pode ser desfeita.`)) {
+          await deleteDoc(doc(db, "carros", id)); 
+          mostrarMensagem("Veículo excluído.");
+       }
+    };
+
+    window.resetarAgendaCarro = async (id, nome) => {
+      if (!confirm(`Deseja LIMPAR TODA a agenda da grade semanal do veículo ${nome}?`)) return;
+
+      try {
+        const ref = doc(db, "carros", id);
+        await updateDoc(ref, { agendaGrade: {} });
+        mostrarMensagem("Agenda resetada com sucesso!");
+        if (carroIdAtual === id && document.getElementById("modalAgenda").style.display === "flex") {
+           desenharGrade({});
+        }
+      } catch (err) {
+        mostrarMensagem("Erro ao resetar agenda", "var(--danger-color)");
+      }
     };
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        usuarioLogado = user.email; nomeUsuarioLogado = user.displayName;
+        usuarioLogado = user.email; 
+        nomeUsuarioLogado = user.displayName;
         document.getElementById("authDiv").style.display = "none";
         document.getElementById("conteudoPrivado").style.display = "block";
-        document.getElementById("userInfo").innerText = "👤 " + (user.displayName || user.email);
+        document.getElementById("userInfo").innerHTML = `<i class="fas fa-user-circle"></i> Olá, ${user.displayName || user.email}`;
         document.getElementById("adminDiv").style.display = emailsAdmins.includes(user.email) ? "block" : "none";
+        
         onSnapshot(collection(db, "carros"), (snap) => renderizar(snap));
-        const qH = query(collection(db, "historico"), orderBy("data", "desc"), limit(10));
-        onSnapshot(qH, (snap) => {
-          const tab = document.getElementById("tabelaHistorico"); tab.innerHTML = "";
-          snap.forEach(d => {
-            const log = d.data();
-            const detalhesKM = log.acao === "devolveu"
-            ? `<br><small>🛣️ Rodou: ${log.totalRodado}km (De ${log.kmSaida} até ${log.kmChegada})</small>`
-            : `<br><small>🛫 Saiu com: ${log.kmSaida}km</small>`;
-            tab.innerHTML += `
-              <div style="text-align:left; font-size:0.75rem; border-bottom:1px solid #eee; padding:8px;">
-                <b>${log.acao.toUpperCase()}</b>: ${log.carroNome} por ${log.usuarioNome || log.usuario}
-                ${detalhesKM}
-                <div style="font-size:0.65rem; color:#999;">${log.data?.toDate().toLocaleString('pt-BR')}</div>
-              </div>`;
-          });
-        });
       } else {
         document.getElementById("authDiv").style.display = "block";
         document.getElementById("conteudoPrivado").style.display = "none";
       }
     });
-    window.resetarAgendaCarro = async (id, nome) => {
-      if (!confirm(`Deseja LIMPAR TODA a agenda do veículo ${nome}?`)) return;
 
-      try {
-        const ref = doc(db, "carros", id);
-        // Definimos o objeto agendaGrade como vazio {}
-        await updateDoc(ref, { agendaGrade: {} });
-        
-        mostrarMensagem("Agenda resetada com sucesso!");
-        // Se o modal estiver aberto, fecha ou redesenha
-        fecharModal();
-      } catch (err) {
-        mostrarMensagem("Erro ao resetar agenda", "#e74c3c");
-      }
-    };
   </script>
 </body>
 </html>
