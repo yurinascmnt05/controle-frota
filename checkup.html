@@ -430,10 +430,13 @@
             // Pega a imagem como texto (base64 JPEG, com 40% de qualidade)
             const dataUrl = canvas.toDataURL("image/jpeg", 0.4);
             
-            if (fotosTemporarias.length < 8) {
+            // Verifica o tamanho total em bytes (limite do Firestore é 1MB)
+            let tamanhoAtual = fotosTemporarias.reduce((acc, str) => acc + str.length, 0);
+            
+            if (tamanhoAtual + dataUrl.length < 900000) {
                fotosTemporarias.push(dataUrl);
             } else {
-               mostrarMensagem("Atenção: Limite de 8 fotos atingido.", "var(--warning-color)");
+               mostrarMensagem("Atenção: Limite de dados (1MB) atingido. Não é possível anexar mais fotos neste checkup.", "var(--danger-color)", 4000);
             }
             
             renderizarPreviewFotos();
