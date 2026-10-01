@@ -83,6 +83,12 @@
     </div>
   </div>
 
+  <!-- Modal Visualizador de Imagem -->
+  <div id="imageModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center;" onclick="fecharImageModal()">
+    <span style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+    <img id="imageModalImg" style="max-width: 95%; max-height: 90vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, query, where, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -148,7 +154,7 @@
 
            let fotosHtml = `<div class="gallery-grid">`;
            log.fotos.forEach(f => {
-             fotosHtml += `<img src="${f}" class="gallery-item" onclick="window.open().document.write('<img src=\\'${f}\\' style=\\'max-width:100%;\\'>')">`;
+             fotosHtml += `<img src="${f}" class="gallery-item" onclick="abrirImagem(this.src)">`;
            });
            fotosHtml += `</div>`;
 
@@ -191,6 +197,24 @@
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
       }
+    };
+
+    window.abrirImagem = (src) => {
+      document.getElementById('imageModalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    };
+
+    window.fecharImageModal = () => {
+      document.getElementById('imageModal').style.display = 'none';
+    };
+
+    window.abrirImagem = (src) => {
+      document.getElementById('imageModalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    };
+
+    window.fecharImageModal = () => {
+      document.getElementById('imageModal').style.display = 'none';
     };
 
     window.excluirVistoria = async (id) => {
