@@ -11,28 +11,32 @@
   <meta name="theme-color" content="#0056b3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
-    /* CSS Refatorado */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
     :root {
-      --primary-color: #0056b3;
-      --secondary-color: #6c757d;
-      --success-color: #28a745;
-      --danger-color: #dc3545;
-      --warning-color: #ffc107;
-      --bg-color: #f4f7f6;
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary-color: #64748b;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+      --bg-color: #f8fafc;
       --card-bg: #ffffff;
-      --text-main: #333333;
-      --text-muted: #6c757d;
-      --border-radius: 8px;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     }
 
     * { 
         margin:0; 
         padding:0; 
         box-sizing:border-box; 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Inter', sans-serif;
     }
 
     body { 
@@ -40,13 +44,14 @@
       color: var(--text-main); 
       text-align:center; 
       padding: 20px 10px;
+      padding-bottom: 50px;
     }
 
     h2 { 
       color: var(--primary-color); 
       margin-bottom:20px; 
       font-size:1.8rem;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     #container { 
@@ -56,17 +61,18 @@
       background: var(--card-bg); 
       padding:25px; 
       border-radius: var(--border-radius); 
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+      box-shadow: var(--shadow-md); 
+      border: 1px solid #f1f5f9;
     }
 
     input, select { 
       width:100%;
-      padding:12px 15px; 
+      padding:14px 15px; 
       margin:10px 0; 
-      border: 1px solid #ced4da; 
+      border: 1px solid #cbd5e1; 
       border-radius: var(--border-radius); 
       font-size:1rem; 
-      transition: border-color 0.3s; 
+      transition: border-color 0.2s; 
       background-color: #fff;
     }
     
@@ -76,14 +82,14 @@
     }
 
     button { 
-      padding:12px 20px; 
+      padding:14px 20px; 
       margin:5px 0; 
       font-size:1rem; 
       border:none; 
       border-radius: var(--border-radius); 
       cursor:pointer; 
       transition: background-color 0.2s, transform 0.1s; 
-      font-weight: 500;
+      font-weight: 600;
       width: 100%;
       display: inline-flex;
       align-items: center;
@@ -95,27 +101,27 @@
       transform: scale(0.98);
     }
 
-    .btn-primary { background: var(--primary-color); color: white; }
-    .btn-primary:hover { background: #004494; }
+    .btn-primary { background: var(--primary-color); color: white; box-shadow: var(--shadow-sm); }
+    .btn-primary:hover { background: var(--primary-hover); }
     
     .btn-success { background: var(--success-color); color: white; }
-    .btn-success:hover { background: #218838; }
+    .btn-success:hover { background: #059669; }
 
     .btn-danger { background: var(--danger-color); color: white; }
-    .btn-danger:hover { background: #c82333; }
+    .btn-danger:hover { background: #b91c1c; }
 
     .btn-secondary { background: var(--secondary-color); color: white; }
-    .btn-secondary:hover { background: #5a6268; }
+    .btn-secondary:hover { background: #475569; }
 
-    .btn-warning { background: var(--warning-color); color: #212529; }
-    .btn-warning:hover { background: #e0a800; }
+    .btn-warning { background: var(--warning-color); color: #fff; }
+    .btn-warning:hover { background: #d97706; }
 
-    .btn-outline { background: transparent; border: 1px solid #ced4da; color: var(--text-main); }
-    .btn-outline:hover { background: #e2e6ea; }
+    .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: var(--text-main); }
+    .btn-outline:hover { background: #f1f5f9; }
 
     .btn-sm {
-      padding: 8px 12px;
-      font-size: 0.85rem;
+      padding: 10px 12px;
+      font-size: 0.9rem;
       width: auto;
     }
 
@@ -125,25 +131,26 @@
       align-items: center; 
       margin-bottom: 20px; 
       padding: 15px; 
-      background: #f8f9fa; 
+      background: #f8fafc; 
       border-radius: var(--border-radius); 
-      border: 1px solid #eaeaea;
+      border: 1px solid #e2e8f0;
     }
 
     .carro-card { 
-      border: 1px solid #eaeaea; 
+      border: 1px solid #e2e8f0; 
       margin: 15px 0; 
       padding: 20px; 
       border-radius: var(--border-radius); 
       background: var(--card-bg);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+      box-shadow: var(--shadow-sm); 
       text-align:left; 
       position:relative; 
-      transition: box-shadow 0.3s;
+      transition: box-shadow 0.3s, border-color 0.3s;
     }
 
     .carro-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+      box-shadow: var(--shadow-md); 
+      border-color: #cbd5e1;
     }
 
     .carro-card b { 
@@ -185,8 +192,8 @@
 
     .carro-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
       margin-bottom: 15px;
     }
 
@@ -389,6 +396,26 @@
           font-size: 0.6rem;
       }
     }
+
+    /* Checkup Modal */
+    .checkup-items label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: var(--border-radius);
+      border: 1px solid #eaeaea;
+      cursor: pointer;
+    }
+    .checkup-items input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -492,25 +519,8 @@
   </div>
 
   <!-- Modal Histórico Individual -->
-  <div id="modalHistorico" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-      <i class="fas fa-times close-modal" onclick="fecharModal('modalHistorico')"></i>
-      <h3 id="tituloModalHistorico" class="modal-title">Histórico</h3>
-      <div id="conteudoHistorico" style="max-height: 400px; overflow-y: auto;">
-        <!-- Lista injetada via JS -->
-      </div>
-    </div>
-  </div>
 
   <script type="module">
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log("PWA: Service Worker Ativo", reg.scope))
-      .catch(err => console.log("PWA: Erro no registro", err));
-      });
-    }
-    
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, addDoc, query, where, getDocs, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -602,9 +612,15 @@
             </div>
 
             <div class="carro-actions">
-              <button class="btn-outline btn-sm" onclick="editarObs('${docSnap.id}')"><i class="fas fa-edit"></i> Editar Obs</button>
+              <button class="btn-outline btn-sm" onclick="editarObs('${docSnap.id}')"><i class="fas fa-edit"></i> Obs</button>
               <button class="btn-primary btn-sm" onclick="abrirAgenda('${docSnap.id}', '${carro.nome}')"><i class="fas fa-calendar-alt"></i> Agenda</button>
-              <button class="btn-secondary btn-sm" style="grid-column: span 2;" onclick="abrirHistorico('${docSnap.id}', '${carro.nome}')"><i class="fas fa-history"></i> Ver Histórico</button>
+              <button class="btn-secondary btn-sm" onclick="abrirHistorico('${docSnap.id}', '${carro.nome}')"><i class="fas fa-clock"></i> Geral</button>
+              
+              ${isAdmin ? `
+              <button class="btn-success btn-sm" onclick="window.location.href='checkup.html?id=${docSnap.id}'"><i class="fas fa-plus"></i> Vistoria</button>
+              <button class="btn-warning btn-sm" style="color: #fff;" onclick="window.location.href='lista_checkups.html?id=${docSnap.id}'"><i class="fas fa-list-check"></i> Checkups</button>
+              <button class="btn-outline btn-sm" onclick="window.location.href='galeria_checkups.html?id=${docSnap.id}'"><i class="fas fa-images"></i> Galeria</button>
+              ` : ''}
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr;">
@@ -836,6 +852,8 @@
        }
     };
 
+
+
     // --- HISTÓRICO INDIVIDUAL ---
     window.abrirHistorico = (carroId, carroNome) => {
        document.getElementById("tituloModalHistorico").innerText = "Histórico: " + carroNome;
@@ -868,8 +886,17 @@
 
           logs.forEach(log => {
              const isDevolucao = log.acao === "devolveu";
-             const iconeAcao = isDevolucao ? "<i class='fas fa-arrow-down' style='color: var(--success-color);'></i>" : "<i class='fas fa-arrow-up' style='color: var(--warning-color);'></i>";
-             const tituloAcao = isDevolucao ? "Devolução" : "Retirada";
+             const isCheckup = log.acao === "checkup";
+             
+             let iconeAcao = "<i class='fas fa-arrow-up' style='color: var(--warning-color);'></i>";
+             let tituloAcao = "Retirada";
+             if (isDevolucao) {
+                iconeAcao = "<i class='fas fa-arrow-down' style='color: var(--success-color);'></i>";
+                tituloAcao = "Devolução";
+             } else if (isCheckup) {
+                iconeAcao = "<i class='fas fa-clipboard-check' style='color: #17a2b8;'></i>";
+                tituloAcao = "Checkup Diário";
+             }
              
              let detalhesExtras = "";
              if (isDevolucao) {
@@ -878,6 +905,12 @@
                      <div><i class="fas fa-road"></i> Rodou: <b>${log.totalRodado}km</b> (De ${log.kmSaida} até ${log.kmChegada})</div>
                      <div><i class="fas fa-gas-pump"></i> Combustível: <b>${log.combustivel || "Não informado"}</b></div>
                      <div><i class="fas fa-map-marker-alt"></i> Local: <b>${log.local || "Não informado"}</b></div>
+                   </div>
+                `;
+             } else if (isCheckup) {
+                detalhesExtras = `
+                   <div style="margin-top: 5px; font-size: 0.8rem; color: var(--secondary-color);">
+                     <i class="fas fa-info-circle"></i> ${log.detalhes || "Checkup Realizado"}
                    </div>
                 `;
              } else {

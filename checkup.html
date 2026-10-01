@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkup do Veículo</title>
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0056b3">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary-color: #64748b;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+
+    * { 
+        margin:0; 
+        padding:0; 
+        box-sizing:border-box; 
+        font-family: 'Inter', sans-serif;
+    }
+
+    body { 
+      background: var(--bg-color); 
+      color: var(--text-main); 
+      padding: 20px 15px;
+      padding-bottom: 50px;
+    }
+
+    .container { 
+      width: 100%;
+      max-width: 600px; 
+      margin: auto; 
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .btn-back {
+      background: var(--card-bg);
+      border: 1px solid #e2e8f0;
+      padding: 10px 15px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 1rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+      font-weight: 500;
+    }
+
+    h2 { 
+      color: var(--primary-color); 
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .card {
+      background: var(--card-bg); 
+      padding: 20px; 
+      border-radius: var(--border-radius); 
+      box-shadow: var(--shadow-md); 
+      margin-bottom: 20px;
+      border: 1px solid #f1f5f9;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 10px;
+    }
+
+    input[type="text"], input[type="file"] { 
+      width: 100%;
+      padding: 14px 15px; 
+      margin: 10px 0; 
+      border: 1px solid #cbd5e1; 
+      border-radius: var(--border-radius); 
+      font-size: 1rem; 
+      background-color: #fff;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    button { 
+      padding: 14px 20px; 
+      font-size: 1rem; 
+      border: none; 
+      border-radius: var(--border-radius); 
+      cursor: pointer; 
+      font-weight: 600;
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary { background: var(--primary-color); color: white; box-shadow: var(--shadow-sm); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    
+    .btn-success { background: var(--success-color); color: white; }
+
+    /* Checkup Items Grid */
+    .checkup-items {
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 12px; 
+      margin-top: 10px;
+    }
+
+    @media (max-width: 400px) {
+      .checkup-items {
+        grid-template-columns: 1fr; /* Better for very small screens */
+      }
+    }
+
+    .checkup-items label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background: #f8fafc;
+      padding: 12px 15px;
+      border-radius: var(--border-radius);
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .checkup-items label:active {
+      background: #f1f5f9;
+    }
+
+    .checkup-items input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+
+    /* Galeria */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .gallery-item {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+    }
+
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--border-radius);
+      padding: 30px 20px;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      color: var(--text-muted);
+      margin-bottom: 15px;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .upload-area:active {
+      background: #f1f5f9;
+    }
+
+    /* Mensagem */
+    #mensagem { 
+      position:fixed; 
+      top: 20px; 
+      left:50%; 
+      transform:translateX(-50%); 
+      background: var(--success-color); 
+      color:white; 
+      padding:14px 25px; 
+      border-radius: var(--border-radius); 
+      display:none; 
+      z-index: 9999;
+      box-shadow: var(--shadow-md);
+      font-weight: 600;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    /* Histórico */
+    .historico-item {
+      text-align: left;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 15px 0;
+    }
+    .historico-item:last-child { border-bottom: none; }
+    .historico-header {
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .badge-ok {
+      background: #dcfce7;
+      color: #166534;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge-nok {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .loading-text { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div id="mensagem"></div>
+
+  <div class="container" id="appContainer" style="display: none;">
+    <div class="header-bar">
+      <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+      <h2 id="veiculoNome">Carregando...</h2>
+    </div>
+
+    <!-- Criar Checkup -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-clipboard-check"></i> Registrar Novo Checkup</div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">
+        <i class="fas fa-user"></i> Usuário em posse atual: <strong id="usuarioPosseAtual">...</strong>
+      </p>
+
+      <form id="formCheckup">
+        <label style="font-weight: 500; font-size: 0.9rem; display: block;">Itens Inspecionados (Marque se estiver OK):</label>
+        
+        <div class="checkup-items">
+          <label><input type="checkbox" id="chkPneus" checked> Pneus</label>
+          <label><input type="checkbox" id="chkRetrovisores" checked> Retrovisores</label>
+          <label><input type="checkbox" id="chkParachoques" checked> Parachoques</label>
+          <label><input type="checkbox" id="chkRodas" checked> Rodas</label>
+          <label><input type="checkbox" id="chkFarois" checked> Faróis</label>
+          <label><input type="checkbox" id="chkLimpadores" checked> Limpadores</label>
+          <label><input type="checkbox" id="chkOleo" checked> Óleo do Motor</label>
+          <label><input type="checkbox" id="chkAgua" checked> Água / Fluídos</label>
+        </div>
+
+        <label style="font-weight: 500; font-size: 0.9rem; display: block; margin-top: 15px;">Observações:</label>
+        <input type="text" id="obsCheckup" placeholder="Relate amassados, arranhões ou problemas...">
+      </form>
+
+        <div style="margin-top: 20px;">
+          <label style="font-weight: 500; font-size: 0.9rem; display: block; margin-bottom: 10px;">
+            <i class="fas fa-camera"></i> Anexar Fotos (Avarias, Estado Geral):
+          </label>
+          <label for="fotoUpload" class="upload-area" style="padding: 15px;">
+            <i class="fas fa-image" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 5px;"></i><br>
+            <span style="font-size: 0.85rem;">Adicionar Foto</span>
+          </label>
+          <input type="file" id="fotoUpload" accept="image/*" multiple style="display: none;" onchange="processarFoto(event)">
+          
+          <div class="gallery-grid" id="previewFotos" style="margin-top: 10px;">
+            <!-- Fotos temporárias aparecerão aqui -->
+          </div>
+        </div>
+      </form>
+
+      <button class="btn-primary" onclick="salvarCheckup()" style="margin-top: 20px;"><i class="fas fa-save"></i> Salvar Checkup</button>
+    </div>
+  </div>
+
+  <div id="authAviso" class="loading-text" style="margin-top: 50px;">
+    <i class="fas fa-spinner fa-spin"></i> Verificando autenticação...
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, addDoc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyADjANdIwDnh6y4kgWN6oLXeJv4Z00oT-M",
+      authDomain: "frota-empresa.firebaseapp.com",
+      projectId: "frota-empresa",
+      storageBucket: "frota-empresa.firebasestorage.app",
+      messagingSenderId: "241729095537",
+      appId: "1:241729095537:web:fcfb1e2a5fe7c3fca098d0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const carroId = urlParams.get('id');
+
+    let nomeDoCarro = "Veículo";
+    let usuarioAtualDoCarro = "Nenhum/Pátio";
+
+    const mostrarMensagem = (texto, cor="#28a745", tempo = 3000) => {
+      const msg = document.getElementById("mensagem");
+      msg.style.background = cor; msg.innerText = texto; msg.style.display = "block";
+      setTimeout(()=> msg.style.display="none", tempo);
+    };
+
+    // Inicialização da Página
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !["ti@ghpc.com.br"].includes(user.email)) {
+        alert("Acesso restrito para administradores.");
+        window.location.href = "index.html";
+        return;
+      }
+      
+      if (!carroId) {
+        alert("Nenhum veículo selecionado!");
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("authAviso").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+
+      await carregarDadosVeiculo();
+    });
+
+    async function carregarDadosVeiculo() {
+      try {
+        const snap = await getDoc(doc(db, "carros", carroId));
+        if(snap.exists()) {
+          const carro = snap.data();
+          nomeDoCarro = carro.nome;
+          usuarioAtualDoCarro = carro.usuarioNome || carro.usuario || "Nenhum/Pátio";
+          
+          document.getElementById("veiculoNome").innerText = "Checkup: " + nomeDoCarro;
+          document.getElementById("usuarioPosseAtual").innerText = usuarioAtualDoCarro;
+        }
+      } catch(e) {
+        console.error("Erro ao carregar dados", e);
+      }
+    }
+
+    let fotosTemporarias = []; // Array para guardar as imagens em base64
+
+    window.processarFoto = (event) => {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            // Redimensionamento e compressão para Base64 (Texto)
+            const canvas = document.createElement("canvas");
+            const max_width = 400; // Limite baixo para não estourar 1MB do banco
+            const scaleSize = max_width / img.width;
+            
+            // Só redimensiona se a imagem for maior que max_width
+            if (img.width > max_width) {
+              canvas.width = max_width;
+              canvas.height = img.height * scaleSize;
+            } else {
+              canvas.width = img.width;
+              canvas.height = img.height;
+            }
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Pega a imagem como texto (base64 JPEG, com 40% de qualidade)
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.4);
+            
+            if (fotosTemporarias.length < 8) {
+               fotosTemporarias.push(dataUrl);
+            } else {
+               mostrarMensagem("Atenção: Limite de 8 fotos atingido.", "var(--warning-color)");
+            }
+            
+            renderizarPreviewFotos();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      event.target.value = ""; // Limpa input
+    };
+
+    function renderizarPreviewFotos() {
+      const container = document.getElementById("previewFotos");
+      container.innerHTML = "";
+      fotosTemporarias.forEach((fotoBase64, index) => {
+        container.innerHTML += `
+          <div style="position: relative;">
+            <img src="${fotoBase64}" class="gallery-item" style="border: 2px solid var(--primary-color);">
+            <button onclick="removerFotoTemporaria(${index})" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; padding: 0; cursor: pointer;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    window.removerFotoTemporaria = (index) => {
+      fotosTemporarias.splice(index, 1);
+      renderizarPreviewFotos();
+    };
+
+    window.salvarCheckup = async () => {
+       const user = auth.currentUser;
+       const nomeUsuario = user.displayName || user.email;
+
+       const itens = {
+         Pneus: document.getElementById("chkPneus").checked,
+         Retrovisores: document.getElementById("chkRetrovisores").checked,
+         Parachoques: document.getElementById("chkParachoques").checked,
+         Rodas: document.getElementById("chkRodas").checked,
+         Faróis: document.getElementById("chkFarois").checked,
+         Limpadores: document.getElementById("chkLimpadores").checked,
+         Óleo: document.getElementById("chkOleo").checked,
+         Água: document.getElementById("chkAgua").checked,
+       };
+       const obs = document.getElementById("obsCheckup").value;
+
+       try {
+          const checkupButton = document.querySelector(".btn-primary");
+          checkupButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Salvando...`;
+          checkupButton.disabled = true;
+
+          await addDoc(collection(db, "historico"), { 
+            carroId: carroId, 
+            carroNome: nomeDoCarro, 
+            usuario: user.email,
+            usuarioNome: nomeUsuario,
+            usuarioPosseAnterior: usuarioAtualDoCarro,
+            acao: "checkup", 
+            detalhes: obs ? `Obs: ${obs}` : "Checkup Diário Realizado",
+            itensInspecionados: itens,
+            fotos: fotosTemporarias, // Salva o array de textos base64 dentro do documento
+            data: new Date() 
+          });
+
+          mostrarMensagem("Checkup registrado com sucesso!");
+          document.getElementById("formCheckup").reset();
+          fotosTemporarias = []; // Limpa array
+          renderizarPreviewFotos(); // Limpa preview
+
+          checkupButton.innerHTML = `<i class="fas fa-save"></i> Salvar Checkup`;
+          checkupButton.disabled = false;
+       } catch (err) {
+          console.error(err);
+          mostrarMensagem("Erro ao salvar checkup", "var(--danger-color)"); 
+       }
+    };
+
+
+  </script>
+</body>
+</html>

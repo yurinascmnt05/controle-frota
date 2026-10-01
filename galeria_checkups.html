@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Galeria de Checkups</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #64748b;
+      --warning-color: #f59e0b;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+
+    body { 
+      background: var(--bg-color); color: var(--text-main); 
+      padding: 20px 15px; padding-bottom: 50px;
+    }
+
+    .container { width: 100%; max-width: 600px; margin: auto; }
+
+    .header-bar {
+      display: flex; align-items: center; gap: 15px; margin-bottom: 25px;
+    }
+
+    .btn-back {
+      background: var(--card-bg); border: 1px solid #e2e8f0; padding: 10px 15px;
+      border-radius: var(--border-radius); cursor: pointer; color: var(--text-main);
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: var(--shadow-sm); font-weight: 500;
+    }
+
+    h2 { color: var(--primary-color); font-size: 1.4rem; font-weight: 700; }
+
+    .folder-btn {
+      background: var(--card-bg); border: 1px solid #e2e8f0; border-radius: var(--border-radius);
+      padding: 18px 20px; margin-bottom: 15px; box-shadow: var(--shadow-sm); display: flex;
+      justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600;
+      color: var(--text-main); transition: all 0.2s;
+    }
+    .folder-btn:active { background: #f1f5f9; }
+    .folder-btn i.fa-images { color: #8b5cf6; font-size: 1.5rem; margin-right: 12px; }
+
+    .folder-content {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;
+      padding: 15px; margin-top: -15px; margin-bottom: 20px; display: none;
+    }
+
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+
+    .gallery-item {
+      width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover;
+      border: 1px solid #cbd5e1; cursor: zoom-in;
+    }
+
+    .loading-text { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-bar">
+      <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i></a>
+      <h2 id="veiculoNome">Galeria (Pastas)</h2>
+    </div>
+
+    <div id="listaGalerias">
+      <div class="loading-text"><i class="fas fa-spinner fa-spin"></i> Carregando álbuns...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyADjANdIwDnh6y4kgWN6oLXeJv4Z00oT-M",
+      authDomain: "frota-empresa.firebaseapp.com",
+      projectId: "frota-empresa",
+      storageBucket: "frota-empresa.firebasestorage.app",
+      messagingSenderId: "241729095537",
+      appId: "1:241729095537:web:fcfb1e2a5fe7c3fca098d0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const auth = getAuth(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const carroId = urlParams.get('id');
+
+    if (!carroId) {
+      alert("Veículo não informado");
+      window.location.href = "index.html";
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user || !["ti@ghpc.com.br"].includes(user.email)) {
+        alert("Acesso restrito para administradores.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      const qH = query(
+        collection(db, "historico"), 
+        where("carroId", "==", carroId),
+        where("acao", "==", "checkup")
+      );
+
+      onSnapshot(qH, (snap) => {
+        const container = document.getElementById("listaGalerias");
+        container.innerHTML = "";
+
+        let logs = [];
+        snap.forEach(d => {
+           let data = d.data();
+           if (data.fotos && data.fotos.length > 0) {
+               data.id = d.id;
+               logs.push(data);
+           }
+        });
+
+        if (logs.length === 0) {
+           container.innerHTML = "<div class='loading-text'>Nenhuma foto enviada neste veículo ainda.</div>";
+           return;
+        }
+
+        logs.sort((a, b) => (b.data?.toDate() || 0) - (a.data?.toDate() || 0));
+
+        logs.forEach(log => {
+           const dateStr = log.data ? log.data.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'Data desconhecida';
+
+           let fotosHtml = `<div class="gallery-grid">`;
+           log.fotos.forEach(f => {
+             fotosHtml += `<img src="${f}" class="gallery-item" onclick="window.open().document.write('<img src=\\'${f}\\' style=\\'max-width:100%;\\'>')">`;
+           });
+           fotosHtml += `</div>`;
+
+           container.innerHTML += `
+              <div class="folder-btn" onclick="toggleFolder('${log.id}')">
+                <div style="display:flex; align-items:center;">
+                  <i class="fas fa-images"></i>
+                  <div style="text-align: left;">
+                     <div>${dateStr}</div>
+                     <div style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">Fotos enviadas por ${log.usuarioNome || log.usuario}</div>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-down" id="icon_${log.id}" style="color: var(--text-muted);"></i>
+              </div>
+              
+              <div class="folder-content" id="content_${log.id}">
+                 ${fotosHtml}
+                 <div style="margin-top: 20px; border-top: 1px solid #cbd5e1; padding-top: 15px; text-align: right;">
+                    <button class="btn-back" style="color: var(--danger-color); border-color: var(--danger-color); font-size: 0.9rem;" onclick="excluirVistoria('${log.id}')"><i class="fas fa-trash"></i> Excluir Imagens/Vistoria</button>
+                 </div>
+              </div>
+           `;
+        });
+      }, (error) => {
+         console.error("Erro ao carregar galeria: ", error);
+         document.getElementById("listaGalerias").innerHTML = "<div class='loading-text'>Erro de permissão ou conexão.</div>";
+      });
+    });
+
+    window.toggleFolder = (id) => {
+      const content = document.getElementById('content_' + id);
+      const icon = document.getElementById('icon_' + id);
+      
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+      } else {
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+      }
+    };
+
+    window.excluirVistoria = async (id) => {
+      if(confirm("Tem certeza que deseja excluir as fotos e toda esta vistoria permanentemente?")) {
+        try {
+          await deleteDoc(doc(db, "historico", id));
+        } catch(e) {
+          console.error("Erro ao excluir", e);
+          alert("Erro ao excluir a vistoria. " + e.message);
+        }
+      }
+    };
+  </script>
+</body>
+</html>
